@@ -138,7 +138,7 @@ You are the orientation counselor for "IncluDO". Your EXCLUSIVE task is to compl
 
             // STEP B: Perform Semantic Search
             const queryVector = await generateEmbedding(searchQuery); 
-            const courses = searchVectors(queryVector, 2); // Limit to top 2 results per requirements
+            const courses = searchVectors(queryVector, 6); // Broader coverage to ensure matches are found among top results
             
             // STEP C: Generate final recommendation based on retrieved data
             const resultsPrompt = `
