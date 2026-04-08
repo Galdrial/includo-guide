@@ -4,7 +4,8 @@ import { Send, Sparkles, User, Loader2, RotateCcw } from 'lucide-react';
 import { motion as Motion, AnimatePresence } from 'framer-motion';
 
 // API configuration based on local server port
-const API_BASE = 'http://localhost:3001/api';
+// Configuration for API endpoint - Localhost for dev, Environment variable for production
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3001/api';
 
 /**
  * MAIN APPLICATION COMPONENT
