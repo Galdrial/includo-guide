@@ -2,6 +2,5 @@ node_modules/
 .env
 dist/
 server/data/sessions.json
-server/data/vector_db.json
 server/server.log
 .DS_Store
