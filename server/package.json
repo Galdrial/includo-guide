@@ -1,0 +1,23 @@
+{
+  "name": "includo-guide-server",
+  "version": "1.0.0",
+  "description": "Backend per IncluDO Guide - Orientamento Artigiano",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "axios": "^1.14.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.1",
+    "express": "^5.2.1",
+    "node-fetch": "^3.3.2",
+    "openai": "^6.33.0"
+  }
+}
