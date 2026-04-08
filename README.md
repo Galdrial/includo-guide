@@ -4,6 +4,7 @@ IncluDO Guide is an agentic RAG-powered chatbot designed to connect individuals 
 
 ## 🚀 Features
 
+- **Live Demo**: [https://includo-guide.vercel.app/](https://includo-guide.vercel.app/)
 - **Agentic RAG Engine**: Semantic search integrated with a strict 5-point orientation checklist.
 - **Data Fidelity**: Guaranteed zero-hallucination course matching based on a real 25-course catalog.
 - **Glassmorphism UI**: High-end, modern design with smooth animations and responsive layouts.
