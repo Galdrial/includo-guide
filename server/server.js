@@ -48,11 +48,30 @@ const tools = [
     }
 ];
 
+app.get('/api/history/:sessionId', (req, res) => {
+    const { sessionId } = req.params;
+    const history = getSession(sessionId);
+    // Return history without the system message for the UI
+    res.json({ history: history.filter(m => m.role !== 'system') });
+});
+
+app.post('/api/reset', (req, res) => {
+    const { sessionId } = req.body;
+    delete sessions[sessionId];
+    res.json({ success: true });
+});
+
 app.post('/api/chat', async (req, res) => {
     const { message, sessionId } = req.body;
-    let history = getSession(sessionId);
+    let history = sessions[sessionId];
     
-    // Add user message
+    // Initialize session if not exists
+    if (!history) {
+        history = getSession(sessionId);
+        sessions[sessionId] = history;
+    }
+    
+    // Add user message to memory
     history.push({ role: "user", content: message });
 
     try {
