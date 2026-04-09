@@ -96,43 +96,49 @@ app.post('/api/chat', async (req, res) => {
     
     const history = getSession(sessionId);
 
-    // 1. GENERARE LA RISPOSTA CONVERSAZIONALE
-    const systemPrompt = `Sii l'esperto "IncluDO Guide". Chiedi con calore: Area, Livello, Obiettivo, Modalità e Ore/settimana. Non elencare i corsi finché non hai tutti i dati.`;
+    const systemPrompt = `Sei l'esperto "IncluDO Guide". 
+    REGOLE: 
+    1. Chiedi con calore: Area, Livello, Obiettivo, Modalità e Ore/settimana. 
+    2. NON citare mai corsi esterni (Udemy, Skillshare, etc.). 
+    3. Parla solo della scuola IncluDO.
+    4. Non inventare corsi prima che appaiano i risultati ufficiali.`;
     
     try {
         const chatContext = [{ role: "system", content: systemPrompt }, ...history, { role: "user", content: message }];
         const aiResponse = await getChatResponse(chatContext); 
         let reply = aiResponse.text();
 
-        // 2. SHADOW PROFILER: Check if the profile is complete (Independent from the reply)
+        // 2. SHADOW PROFILER: Stronger JSON Extraction
         const profilerPrompt = `
-        Analizza la chat e estrai i parametri in questo JSON:
-        {"area": "...", "level": "...", "objective": "...", "modality": "...", "hours": 0}
-        Se un parametro manca, scrivi "null".
-        Chat: ${JSON.stringify([...history, { role: "user", content: message }])}
+        Estrai i dati dalla chat in questo formato JSON (usa "null" se mancano):
+        {"area": "Pelle|Legno|Ceramica|Tessuti|Natura", "level": "Principiante|Intermedio|Avanzato", "objective": "Lavoro|Hobby", "modality": "Presenza|Remoto", "hours": numero}
+        
+        Conversazione: ${JSON.stringify([...history.slice(-6), { role: "user", content: message }])}
         `;
-        const profileResult = await getChatResponse([{ role: "system", content: "Output ONLY JSON or 'null'" }, { role: "user", content: profilerPrompt }], "gpt-4o-mini");
+        const profileResult = await getChatResponse([{ role: "system", content: "Output ONLY valid JSON" }, { role: "user", content: profilerPrompt }], "gpt-4o-mini");
         
         try {
-            const profile = JSON.parse(profileResult.text());
-            const isComplete = profile.area && profile.level && profile.objective && profile.modality && profile.hours;
+            const cleanText = profileResult.text().replace(/```json|```/g, "").trim();
+            const profile = JSON.parse(cleanText);
+            const isComplete = profile.area !== "null" && profile.level !== "null" && profile.objective !== "null" && profile.modality !== "null" && (profile.hours !== "null" && profile.hours > 0);
 
             if (isComplete && !history.some(h => h.content.includes("###"))) {
                 // AUTO-TRIGGER SEARCH
-                const queryVector = await generateEmbedding(`${profile.area} ${profile.level} ${profile.objective} ${profile.modality} ${profile.hours} hours`); 
+                const queryVector = await generateEmbedding(`${profile.area} ${profile.level} ${profile.objective} ${profile.modality} ${profile.hours} ore`); 
                 const searchResults = searchVectors(queryVector, 10);
                 
                 const resultsPrompt = `
-                Dati utente: ${JSON.stringify(profile)}
-                Corsi: ${JSON.stringify(searchResults.map(r => r.metadata))}
-                Genera la risposta finale con "CORSI IDEALI" e "CONSIGLI ALTERNATIVI". 
-                Sii onesto se il match non è 100% (esempio: se l'utente vuole Remoto ma il corso è in Presenza, mettilo in Alternativi).
+                Dati Utente: ${JSON.stringify(profile)}
+                Catalogo: ${JSON.stringify(searchResults.map(r => r.metadata))}
+                
+                COMPITO: Genera la risposta dell'orientatoreIncluDO mostrando i "CORSI IDEALI" (match 100%) e "CONSIGLI ALTERNATIVI". 
+                Sii onesto se il match non è 100% (es. ore diverse o modalità diversa). Sostituisci completamente la risposta precedente.
                 `;
-                const finalResult = await getChatResponse([{ role: "system", content: "Sii un consulente onesto e accogliente" }, { role: "user", content: resultsPrompt }]);
+                const finalResult = await getChatResponse([{ role: "system", content: "Sei un orientatore professionale. Mostra i risultati del database ufficiale." }, { role: "user", content: resultsPrompt }]);
                 reply = finalResult.text();
             }
         } catch (e) {
-            // Profiler failed or returned null, continue normally
+            console.error("Profiler failed:", e);
         }
 
         history.push({ role: "user", content: message }, { role: "assistant", content: reply });
