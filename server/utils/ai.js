@@ -37,7 +37,7 @@ const getChatResponse = async (messages) => {
         }
         
         const response = await openai.chat.completions.create({
-            model: "gpt-4o-mini",
+            model: "gpt-4o",
             messages: messages.map(m => ({
                 role: m.role,
                 content: m.content
