@@ -128,13 +128,20 @@ app.post('/api/chat', async (req, res) => {
                 const searchResults = searchVectors(queryVector, 10);
                 
                 const resultsPrompt = `
-                Dati Utente: ${JSON.stringify(profile)}
-                Catalogo: ${JSON.stringify(searchResults.map(r => r.metadata))}
+                RICHIESTA UTENTE: Area ${profile.area}, Livello ${profile.level}, Obiettivo ${profile.objective}, Modalità ${profile.modality}, Disponibilità ${profile.hours} ore/sett.
+                CATALOGO TROVATO: ${JSON.stringify(searchResults.map(r => r.metadata))}
                 
-                COMPITO: Genera la risposta dell'orientatoreIncluDO mostrando i "CORSI IDEALI" (match 100%) e "CONSIGLI ALTERNATIVI". 
-                Sii onesto se il match non è 100% (es. ore diverse o modalità diversa). Sostituisci completamente la risposta precedente.
+                COMPITO: 
+                1. Identifica i CORSI IDEALI. Un corso è IDEALE SOLO SE:
+                   - L'Area corrisponde esattamente alla richiesta.
+                   - Il Livello corrisponde esattamente.
+                   - L'Obiettivo corrisponde esattamente.
+                   - La Modalità corrisponde esattamente.
+                   - Le ore settimanali del corso sono MINORI O UGUALI a quelle dell'utente (${profile.hours}).
+                2. Metti tutto il resto nei CONSIGLI ALTERNATIVI, spiegando chiaramente perché (es: "Questo corso è in un'altra area (Legno) ma offre strumenti utili" oppure "Supera le tue ore disponibili").
+                3. SE NON CI SONO MATCH IDEALI, dillo chiaramente all'inizio.
                 `;
-                const finalResult = await getChatResponse([{ role: "system", content: "Sei un orientatore professionale. Mostra i risultati del database ufficiale." }, { role: "user", content: resultsPrompt }]);
+                const finalResult = await getChatResponse([{ role: "system", content: "Sei un orientatore rigoroso e preciso. Non sbagliare mai la corrispondenza dell'Area." }, { role: "user", content: resultsPrompt }]);
                 reply = finalResult.text();
             }
         } catch (e) {
