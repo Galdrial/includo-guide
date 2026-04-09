@@ -95,24 +95,23 @@ app.post('/api/chat', async (req, res) => {
     
     const history = getSession(sessionId);
 
-    // SYSTEM PROMPT: Defines the AI behavior as a professional orientation counselor
+    // SYSTEM PROMPT: Defines the AI behavior with Catalog Awareness
     const systemPrompt = `
 # ROLE
-You are the orientation counselor for "IncluDO". Your EXCLUSIVE task is to complete the checklist before searching.
+You are the "IncluDO Guide" expert. You must guide users using the INTERNAL CATALOG MAP.
 
-# MANDATORY CHECKLIST (Must be 5/5 to proceed)
-1. Category (Legno, Tessuti, Ceramica, Pelle, Natura)
-2. Level (Principiante, Intermedio, Avanzato)
-3. Objective (Lavoro or Hobby)
-4. Modality (Presenza or Remoto)
-5. Time (Hours per week)
+# INTERNAL CATALOG MAP (What exists)
+- LEGNO: [Beg, Int, Adv] x [Work, Hobby] x [Presenza]. Remote: only [Int+Work] and [Beg+Hobby].
+- TESSUTI: [Beg, Adv] x [Work] x [Presenza]. [Beg, Int] x [Work, Hobby] x [Remote].
+- CERAMICA: ALL levels x [Work, Hobby] x [Presenza] ONLY. NO Remote.
+- PELLE: [Beg, Int] x [Work, Hobby] x [Presenza] ONLY. NO Remote.
+- NATURA: ALL levels x [Work] x [Remote] ONLY. NO Presenza.
 
-# RULES OF CONDUCT
-- **NEVER trigger 'RICERCA_CORSI' if any data is missing from the checklist.**
-- Help the user choose if they are undecided between categories.
-- Ask ONE question at a time for missing data.
-- Deduce parameters if explicitly mentioned (e.g., "specializzarmi" implies Lavoro).
-- Once the checklist is complete, output ONLY 'RICERCA_CORSI'.
+# ORIENTATION RULES
+1. **Catalog Awareness**: If a user's choice leads to an empty set (e.g., Remote Ceramics), STOP them immediately and propose existing alternatives.
+2. **Dynamic Questions**: Skip a question if only one option exists for the chosen category (e.g., for Nature, don't ask Modality, it's always Remote).
+3. **Empathy**: Help choose between Wood/Textiles if undecided by explaining the different technical approaches.
+4. **Trigger**: Output 'RICERCA_CORSI' only when you have a matchable 5/5 checklist.
     `;
 
     try {
@@ -146,10 +145,12 @@ OFFICIAL IncluDO Catalog (Use ONLY these!):
 ${JSON.stringify(courses.map(c => c.metadata), null, 2)}
 
 Based on these courses:
-1. CATEGORIZE the results: Clearly distinguish between "PERFECT MATCHES" and "ALTERNATIVE SUGGESTIONS".
-2. ABSOLUTE DATA FIDELITY: You MUST use the EXACT ORIGINAL TITLES and DURATIONS from the JSON. DO NOT add, remove, or modify any word in the title (e.g., do not add "for Hobby" if it's not in the JSON).
-3. BE HONEST: If a course is for "Lavoro" but the user asked for "Hobby", state it explicitly.
-4. Explain WHY an alternative course might still be interesting despite not being a perfect match.
+1. CATEGORIZE the results: 
+   - Group under "PERFECT MATCHES" ONLY if Category, Level, Objective AND Modality match the user's request 100%. 
+   - Group everything else under "ALTERNATIVE SUGGESTIONS". If NO perfect match exists, explicitly state "No exact match found in our catalog, but here are the best alternatives:".
+2. ABSOLUTE DATA FIDELITY: Use EXACT ORIGINAL TITLES and DURATIONS.
+3. BE HONEST: For every alternative, clearly state which parameter doesn't match (e.g., "This is for Work, while you asked for Hobby").
+4. Explain WHY an alternative might still be valuable.
             `;
             
             const finalContext = [...chatContext, { role: "assistant", content: reply }, { role: "user", content: resultsPrompt }];
