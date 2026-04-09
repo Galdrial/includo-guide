@@ -96,43 +96,43 @@ app.post('/api/chat', async (req, res) => {
     
     const history = getSession(sessionId);
 
-    const systemPrompt = `
-Sii l'esperto "IncluDO Guide". Il tuo UNICO compito è raccogliere questi 5 dati in una conversazione calda ed empatica:
-1. Area (Legno, Tessuti, Ceramica, Pelle, Natura)
-2. Livello (Principiante, Intermedio, Avanzato)
-3. Obiettivo (Lavoro, Hobby)
-4. Modalità (Presenza, Remoto)
-5. Ore disponibili a settimana
-
-REGOLE FERREE:
-- NON elencare mai nomi di corsi o descrizioni prima della fine. Mantieni il mistero.
-- NON inventare corsi.
-- Appena hai tutti i 5 dati, scrivi UNICAMENTE la parola "RICERCA_CORSI" e nient'altro. 
-- La tua risposta finale DEVE essere la stringa 'RICERCA_CORSI' per svelare i risultati.
-
-RISPONDI SEMPRE IN ITALIANO.
-    `;
-
+    // 1. GENERARE LA RISPOSTA CONVERSAZIONALE
+    const systemPrompt = `Sii l'esperto "IncluDO Guide". Chiedi con calore: Area, Livello, Obiettivo, Modalità e Ore/settimana. Non elencare i corsi finché non hai tutti i dati.`;
+    
     try {
         const chatContext = [{ role: "system", content: systemPrompt }, ...history, { role: "user", content: message }];
         const aiResponse = await getChatResponse(chatContext); 
         let reply = aiResponse.text();
 
-        if (reply.includes("RICERCA_CORSI")) {
-            const queryVector = await generateEmbedding(history.map(h => h.content).join(" ") + " " + message); 
-            const searchResults = searchVectors(queryVector, 10);
-            
-            const resultsPrompt = `
-Ecco i corsi ufficiali:
-${JSON.stringify(searchResults.map(r => r.metadata), null, 2)}
+        // 2. SHADOW PROFILER: Check if the profile is complete (Independent from the reply)
+        const profilerPrompt = `
+        Analizza la chat e estrai i parametri in questo JSON:
+        {"area": "...", "level": "...", "objective": "...", "modality": "...", "hours": 0}
+        Se un parametro manca, scrivi "null".
+        Chat: ${JSON.stringify([...history, { role: "user", content: message }])}
+        `;
+        const profileResult = await getChatResponse([{ role: "system", content: "Output ONLY JSON or 'null'" }, { role: "user", content: profilerPrompt }], "gpt-4o-mini");
+        
+        try {
+            const profile = JSON.parse(profileResult.text());
+            const isComplete = profile.area && profile.level && profile.objective && profile.modality && profile.hours;
 
-In base a questi dati:
-1. Mostra i "CORSI IDEALI" (match 100%) e i "CONSIGLI ALTERNATIVI". 
-2. Sii onesto: se un corso richiede più ore di quelle dell'utente o ha un obiettivo diverso, spiegalo chiaramente nei consigli alternativi.
-3. Usa uno stile professionale e accogliente.
-            `;
-            const finalResult = await getChatResponse([...chatContext, { role: "assistant", content: reply }, { role: "user", content: resultsPrompt }]);
-            reply = finalResult.text().replace("RICERCA_CORSI", "");
+            if (isComplete && !history.some(h => h.content.includes("###"))) {
+                // AUTO-TRIGGER SEARCH
+                const queryVector = await generateEmbedding(`${profile.area} ${profile.level} ${profile.objective} ${profile.modality} ${profile.hours} hours`); 
+                const searchResults = searchVectors(queryVector, 10);
+                
+                const resultsPrompt = `
+                Dati utente: ${JSON.stringify(profile)}
+                Corsi: ${JSON.stringify(searchResults.map(r => r.metadata))}
+                Genera la risposta finale con "CORSI IDEALI" e "CONSIGLI ALTERNATIVI". 
+                Sii onesto se il match non è 100% (esempio: se l'utente vuole Remoto ma il corso è in Presenza, mettilo in Alternativi).
+                `;
+                const finalResult = await getChatResponse([{ role: "system", content: "Sii un consulente onesto e accogliente" }, { role: "user", content: resultsPrompt }]);
+                reply = finalResult.text();
+            }
+        } catch (e) {
+            // Profiler failed or returned null, continue normally
         }
 
         history.push({ role: "user", content: message }, { role: "assistant", content: reply });
