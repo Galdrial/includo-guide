@@ -95,28 +95,22 @@ app.post('/api/chat', async (req, res) => {
     message = message.replace(/<[^>]*>?/gm, ''); // Strip HTML tags
     
     const history = getSession(sessionId);
-    const courses = loadDB().map(entry => entry.metadata);
-
-    // NEW DYNAMIC FUNNEL LOGIC
-    // We provide a compressed map of ALL 50 courses so the AI can "screen" in real-time
-    const catalogMap = courses.map(c => `- ${c.title} (${c.area}, ${c.level}, ${c.objective}, ${c.remote ? 'Remoto' : 'Presenza'}, ${c.weekly_hours}h/sett)`).join('\n');
 
     const systemPrompt = `
-# RUOLO
-Sei l'esperto "IncluDO Guide". Il tuo compito è aiutare l'utente a trovare il corso ideale nel nostro catalogo di 50 corsi.
+Sii l'esperto "IncluDO Guide". Il tuo UNICO compito è raccogliere questi 5 dati in una conversazione calda ed empatica:
+1. Area (Legno, Tessuti, Ceramica, Pelle, Natura)
+2. Livello (Principiante, Intermedio, Avanzato)
+3. Obiettivo (Lavoro, Hobby)
+4. Modalità (Presenza, Remoto)
+5. Ore disponibili a settimana
 
-# CATALOGO COMPLETO (La tua mappa mentale)
-${catalogMap}
+REGOLE FERREE:
+- NON elencare mai nomi di corsi o descrizioni prima della fine. Mantieni il mistero.
+- NON inventare corsi.
+- Appena hai tutti i 5 dati, scrivi UNICAMENTE la parola "RICERCA_CORSI" e nient'altro. 
+- La tua risposta finale DEVE essere la stringa 'RICERCA_CORSI' per svelare i risultati.
 
-# PROTOCOLLO AKINATOR (Strategia Investigativa V2)
-1. **Segretezza Totale**: NON scrivere mai i nomi dei corsi o i dettagli nel corpo del messaggio. È SEVERAMENTE VIETATO anticipare i titoli.
-2. **Il Gioco dei Numeri**: Di' solo quanti corsi sono rimasti (es. "Ho ancora 3 corsi che corrispondono...").
-3. **Checklist 5/5**: Ottieni sempre: Area, Livello, Obiettivo, Modalità e Ore/settimana. Fai domande strategiche per scremare il catalogo.
-4. **Il Momento della Verità**: Quando hai ridotto la scelta a 1-3 corsi e hai tutti i dati, scrivi ESCLUSIVAMENTE "RICERCA_CORSI" senza aggiungere i nomi dei corsi nel testo.
-5. **Fallimento**: Se restano 0 corsi, dillo subito e chiedi di cambiare l'ultimo parametro.
-
-# STILE
-Sii un mastro artigiano accogliente, autorevole e molto onesto. Parla SEMPRE in italiano.
+RISPONDI SEMPRE IN ITALIANO.
     `;
 
     try {
@@ -125,16 +119,17 @@ Sii un mastro artigiano accogliente, autorevole e molto onesto. Parla SEMPRE in 
         let reply = aiResponse.text();
 
         if (reply.includes("RICERCA_CORSI")) {
-            // Final RAG to get descriptions and full skills
-            const queryVector = await generateEmbedding(message + " " + history.map(h => h.content).join(" ")); 
+            const queryVector = await generateEmbedding(history.map(h => h.content).join(" ") + " " + message); 
             const searchResults = searchVectors(queryVector, 10);
             
             const resultsPrompt = `
-In base alla nostra conversazione, ecco i corsi dal catalogo:
+Ecco i corsi ufficiali:
 ${JSON.stringify(searchResults.map(r => r.metadata), null, 2)}
 
-1. Mostra i CORSI IDEALI (match 100%) e i CONSIGLI ALTERNATIVI.
-2. Usa TITOLI ORIGINALI e dati esatti. Sii onesto se qualcosa non coincide.
+In base a questi dati:
+1. Mostra i "CORSI IDEALI" (match 100%) e i "CONSIGLI ALTERNATIVI". 
+2. Sii onesto: se un corso richiede più ore di quelle dell'utente o ha un obiettivo diverso, spiegalo chiaramente nei consigli alternativi.
+3. Usa uno stile professionale e accogliente.
             `;
             const finalResult = await getChatResponse([...chatContext, { role: "assistant", content: reply }, { role: "user", content: resultsPrompt }]);
             reply = finalResult.text().replace("RICERCA_CORSI", "");
