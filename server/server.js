@@ -146,9 +146,9 @@ OFFICIAL IncluDO Catalog (Use ONLY these!):
 ${JSON.stringify(courses.map(c => c.metadata), null, 2)}
 
 Based on these courses:
-1. CATEGORIZE the results: Clearly distinguish between "PERFECT MATCHES" and "ALTERNATIVE SUGGESTIONS" if some parameters are missing.
-2. BE HONEST: If a course is for "Lavoro" but the user asked for "Hobby", state it explicitly. If the Level is different, highlight it.
-3. Use ORIGINAL TITLES and EXACT DURATIONS from the JSON.
+1. CATEGORIZE the results: Clearly distinguish between "PERFECT MATCHES" and "ALTERNATIVE SUGGESTIONS".
+2. ABSOLUTE DATA FIDELITY: You MUST use the EXACT ORIGINAL TITLES and DURATIONS from the JSON. DO NOT add, remove, or modify any word in the title (e.g., do not add "for Hobby" if it's not in the JSON).
+3. BE HONEST: If a course is for "Lavoro" but the user asked for "Hobby", state it explicitly.
 4. Explain WHY an alternative course might still be interesting despite not being a perfect match.
             `;
             
