@@ -1,162 +1,102 @@
-const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '.env') });
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const { generateEmbedding, getChatResponse } = require('./utils/ai');
-const { loadDB, saveDB, searchVectors } = require('./utils/db');
 const fs = require('fs');
+const path = require('path');
+const { getChatResponse, generateEmbedding } = require('./utils/ai');
+const { searchVectors } = require('./utils/db');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-const PORT = process.env.PORT || 3001;
+// In-memory session storage
+const sessions = {};
 
-/**
- * 1. ADMIN INGESTION ENDPOINT
- * Used to populate the vector database with course data.
- * It converts text descriptions into vector embeddings for semantic search.
- */
-app.post('/api/admin/ingest', async (req, res) => {
-  try {
-    const courses = req.body; 
-    const vectorDB = loadDB();
-    
-    for (const course of (Array.isArray(courses) ? courses : [courses])) {
-      // Create a rich string for embedding to ensure high semantic accuracy
-      const embedString = `Title: ${course.title}. Area: ${course.area}. Level: ${course.level}. Objective: ${course.objective}. Time: ${course.weekly_hours}h/week. Remote: ${course.remote ? 'yes' : 'no'}. Skills: ${course.skills.join(', ')}. Description: ${course.description}.`;
-      
-      const vector = await generateEmbedding(embedString);
-      
-      const entry = {
-        id: course.id,
-        vector,
-        metadata: {
-          title: course.title,
-          duration: course.duration,
-          weekly_hours: course.weekly_hours,
-          remote: course.remote,
-          skills: course.skills,
-          description: course.description,
-          level: course.level,
-          objective: course.objective
-        }
-      };
-      
-      // Update existing entry or push new one (Upsert logic)
-      const index = vectorDB.findIndex(v => v.id === course.id);
-      if (index !== -1) vectorDB[index] = entry; else vectorDB.push(entry);
+const getSession = (id) => sessions[id] || [
+    { 
+        role: "system", 
+        content: `Sei l'esperto orientatore di 'IncluDO', un progetto no-profit che preserva i mestieri artigianali.
+        Il tuo obiettivo è consigliare i 2 corsi migliori dal catalogo ufficiale.
+        
+        REGOLE DI CONVERSAZIONE:
+        1. Fai UNA domanda alla volta. Non sommergere l'utente.
+        2. Raccogli questi 5 punti: Area d'interesse, Livello (Principiante/Intermedio/Avanzato), Obiettivo (Lavoro/Hobby), Modalità (Presenza/Remoto), Tempo disponibile (ore/settimana).
+        3. Non dare raccomandazioni finché non hai tutti i pezzi del profilo.
+        4. Usa un tono accogliente, professionale e umano.
+        5. Una volta completato il profilo, usa il tool 'cerca_corsi' per ottenere i dati reali.
+        
+        RISPONDI SEMPRE IN ITALIANO.` 
     }
-    
-    saveDB(vectorDB);
-    res.json({ success: true, message: "Ingestion completed successfully." });
-  } catch (error) {
-    res.status(500).json({ error: "Error during ingestion process." });
-  }
-});
+];
 
-/**
- * 2. SESSION PERSISTENCE LOGIC
- * Simple file-based session storage to keep track of user conversations.
- */
-const SESSION_DB_PATH = path.join(__dirname, 'data/sessions.json');
-
-const getSession = (id) => {
-    if (!fs.existsSync(SESSION_DB_PATH)) fs.writeFileSync(SESSION_DB_PATH, '{}');
-    const db = JSON.parse(fs.readFileSync(SESSION_DB_PATH));
-    return db[id] || [];
-};
-
-const saveSession = (id, history) => {
-    const db = JSON.parse(fs.readFileSync(SESSION_DB_PATH));
-    db[id] = history;
-    fs.writeFileSync(SESSION_DB_PATH, JSON.stringify(db, null, 2));
-};
-
-/**
- * 3. HISTORY RETRIEVAL ENDPOINT
- * Allows the frontend to restore chat history based on the current sessionId.
- */
-app.get('/api/history/:sessionId', (req, res) => {
-    const history = getSession(req.params.sessionId);
-    res.json({ history });
-});
-
-/**
- * 4. CORE CHAT & ORIENTATION ENDPOINT
- * Orchestrates the conversation flow, data extraction, and RAG search.
- */
-app.post('/api/chat', async (req, res) => {
-    let { message, sessionId } = req.body;
-    
-    // SECURITY: Input Sanitization and validation
-    if (!message || typeof message !== 'string') return res.status(400).json({ error: "Invalid message format." });
-    message = message.trim().substring(0, 500); // Prevent token overflow/attacks
-    message = message.replace(/<[^>]*>?/gm, ''); // Strip HTML tags
-    
-    const history = getSession(sessionId);
-
-    const systemPrompt = `Sei l'esperto "IncluDO Guide". 
-    REGOLE: 
-    1. Chiedi con calore: Area, Livello, Obiettivo, Modalità e Ore/settimana. 
-    2. NON citare mai corsi esterni (Udemy, Skillshare, etc.). 
-    3. Parla solo della scuola IncluDO.
-    4. Non inventare corsi prima che appaiano i risultati ufficiali.`;
-    
-    try {
-        const chatContext = [{ role: "system", content: systemPrompt }, ...history, { role: "user", content: message }];
-        const aiResponse = await getChatResponse(chatContext); 
-        let reply = aiResponse.text();
-
-        // 2. SHADOW PROFILER: Stronger JSON Extraction
-        const profilerPrompt = `
-        Estrai i dati dalla chat in questo formato JSON (usa "null" se mancano):
-        {"area": "Pelle|Legno|Ceramica|Tessuti|Natura", "level": "Principiante|Intermedio|Avanzato", "objective": "Lavoro|Hobby", "modality": "Presenza|Remoto", "hours": numero}
-        
-        Conversazione: ${JSON.stringify([...history.slice(-6), { role: "user", content: message }])}
-        `;
-        const profileResult = await getChatResponse([{ role: "system", content: "Output ONLY valid JSON" }, { role: "user", content: profilerPrompt }], "gpt-4o-mini");
-        
-        try {
-            const cleanText = profileResult.text().replace(/```json|```/g, "").trim();
-            const profile = JSON.parse(cleanText);
-            const isComplete = profile.area !== "null" && profile.level !== "null" && profile.objective !== "null" && profile.modality !== "null" && (profile.hours !== "null" && profile.hours > 0);
-
-            if (isComplete && !history.some(h => h.content.includes("###"))) {
-                // AUTO-TRIGGER SEARCH
-                const queryVector = await generateEmbedding(`${profile.area} ${profile.level} ${profile.objective} ${profile.modality} ${profile.hours} ore`); 
-                const searchResults = searchVectors(queryVector, 10);
-                
-                const resultsPrompt = `
-                RICHIESTA UTENTE: Area ${profile.area}, Livello ${profile.level}, Obiettivo ${profile.objective}, Modalità ${profile.modality}, Disponibilità ${profile.hours} ore/sett.
-                CATALOGO TROVATO: ${JSON.stringify(searchResults.map(r => r.metadata))}
-                
-                COMPITO: 
-                1. Identifica i CORSI IDEALI. Un corso è IDEALE SOLO SE:
-                   - L'Area corrisponde esattamente alla richiesta.
-                   - Il Livello corrisponde esattamente.
-                   - L'Obiettivo corrisponde esattamente.
-                   - La Modalità corrisponde esattamente.
-                   - Le ore settimanali del corso sono MINORI O UGUALI a quelle dell'utente (${profile.hours}).
-                2. Metti tutto il resto nei CONSIGLI ALTERNATIVI, spiegando chiaramente perché (es: "Questo corso è in un'altra area (Legno) ma offre strumenti utili" oppure "Supera le tue ore disponibili").
-                3. SE NON CI SONO MATCH IDEALI, dillo chiaramente all'inizio.
-                `;
-                const finalResult = await getChatResponse([{ role: "system", content: "Sei un orientatore rigoroso e preciso. Non sbagliare mai la corrispondenza dell'Area." }, { role: "user", content: resultsPrompt }]);
-                reply = finalResult.text();
+// TOOL DEFINITION: Following the project mandate for Function Calling
+const tools = [
+    {
+        type: "function",
+        function: {
+            name: "cerca_corsi",
+            description: "Cerca i corsi nel catalogo IncluDO in base al profilo utente completo.",
+            parameters: {
+                type: "object",
+                properties: {
+                    query: { type: "string", description: "Stringa di ricerca che riassume Area, Livello, Obiettivo, Modalità e Ore." }
+                },
+                required: ["query"]
             }
-        } catch (e) {
-            console.error("Profiler failed:", e);
+        }
+    }
+];
+
+app.post('/api/chat', async (req, res) => {
+    const { message, sessionId } = req.body;
+    let history = getSession(sessionId);
+    
+    // Add user message
+    history.push({ role: "user", content: message });
+
+    try {
+        // Step 1: Call AI with tools
+        const response = await getChatResponse(history, "gpt-4o", tools);
+        let aiMessage = response.choices[0].message;
+
+        // Step 2: Check if AI wants to call a tool (The "RAG Moment")
+        if (aiMessage.tool_calls) {
+            const toolCall = aiMessage.tool_calls[0];
+            const args = JSON.parse(toolCall.function.arguments);
+            
+            // Execute RAG
+            const vector = await generateEmbedding(args.query);
+            const matches = searchVectors(vector, 10);
+            
+            // Add tool response to history
+            history.push(aiMessage);
+            history.push({
+                role: "tool",
+                tool_call_id: toolCall.id,
+                content: JSON.stringify(matches.map(m => m.metadata))
+            });
+
+            // Step 3: Final response with RAG data
+            const finalResponse = await getChatResponse(history, "gpt-4o");
+            aiMessage = finalResponse.choices[0].message;
         }
 
-        history.push({ role: "user", content: message }, { role: "assistant", content: reply });
-        saveSession(sessionId, history);
+        // Final cleanup and save
+        const reply = aiMessage.content;
+        history.push({ role: "assistant", content: reply });
+        
+        // Keep history manageable (last 15 messages)
+        if (history.length > 15) history = [history[0], ...history.slice(-14)];
+        sessions[sessionId] = history;
+
         res.json({ reply, history });
+
     } catch (error) {
-        console.error("Chat terminal error:", error);
-        res.status(500).json({ error: "Siamo spiacenti, c'è stato un problema tecnico. Riprova più tardi." });
+        console.error("Server Reset Error:", error);
+        res.status(500).json({ error: "Errore nel processamento della richiesta." });
     }
 });
 
-app.listen(PORT, () => {
-    console.log(`IncluDO Server live on port ${PORT}`);
-});
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => console.log(`IncluDO Server Spec-Compliant running on port ${PORT}`));
