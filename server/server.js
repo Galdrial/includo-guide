@@ -24,7 +24,7 @@ app.post('/api/admin/ingest', async (req, res) => {
     
     for (const course of (Array.isArray(courses) ? courses : [courses])) {
       // Create a rich string for embedding to ensure high semantic accuracy
-      const embedString = `Title: ${course.title}. Area: ${course.area}. Level: ${course.level}. Objective: ${course.objective}. Remote: ${course.remote ? 'yes' : 'no'}. Skills: ${course.skills.join(', ')}. Description: ${course.description}.`;
+      const embedString = `Title: ${course.title}. Area: ${course.area}. Level: ${course.level}. Objective: ${course.objective}. Time: ${course.weekly_hours}h/week. Remote: ${course.remote ? 'yes' : 'no'}. Skills: ${course.skills.join(', ')}. Description: ${course.description}.`;
       
       const vector = await generateEmbedding(embedString);
       
@@ -34,6 +34,7 @@ app.post('/api/admin/ingest', async (req, res) => {
         metadata: {
           title: course.title,
           duration: course.duration,
+          weekly_hours: course.weekly_hours,
           remote: course.remote,
           skills: course.skills,
           description: course.description,
@@ -109,9 +110,11 @@ You are the "IncluDO Guide" expert. You must guide users using the INTERNAL CATA
 
 # ORIENTATION RULES
 1. **Catalog Awareness**: If a user's choice leads to an empty set (e.g., Remote Ceramics), STOP them immediately and propose existing alternatives.
-2. **Dynamic Questions**: Skip a question if only one option exists for the chosen category (e.g., for Nature, don't ask Modality, it's always Remote).
-3. **Empathy**: Help choose between Wood/Textiles if undecided by explaining the different technical approaches.
-4. **Trigger**: Output 'RICERCA_CORSI' only when you have a matchable 5/5 checklist.
+2. **Dynamic Questions**: Skip a question if only one option exists for the category.
+3. **Checklist (Mandatory 5/5)**: Category, Level, Objective, Modality, and HOURS PER WEEK.
+4. **Efficiency**: Deduce parameters if explicitly mentioned, but ensure all 5 points are clear before searching.
+5. **Language**: RISPONDI SEMPRE IN ITALIANO.
+6. **Trigger**: Output 'RICERCA_CORSI' only when you have a 5/5 complete profile.
     `;
 
     try {
@@ -144,13 +147,14 @@ You are the "IncluDO Guide" expert. You must guide users using the INTERNAL CATA
 OFFICIAL IncluDO Catalog (Use ONLY these!):
 ${JSON.stringify(courses.map(c => c.metadata), null, 2)}
 
-Based on these courses:
-1. CATEGORIZE the results: 
-   - Group under "PERFECT MATCHES" ONLY if Category, Level, Objective AND Modality match the user's request 100%. 
-   - Group everything else under "ALTERNATIVE SUGGESTIONS". If NO perfect match exists, explicitly state "No exact match found in our catalog, but here are the best alternatives:".
-2. ABSOLUTE DATA FIDELITY: Use EXACT ORIGINAL TITLES and DURATIONS.
-3. BE HONEST: For every alternative, clearly state which parameter doesn't match (e.g., "This is for Work, while you asked for Hobby").
-4. Explain WHY an alternative might still be valuable.
+In base a questi corsi:
+1. CATEGORIZZA i risultati: 
+   - Usa "CORSI IDEALI" SOLO se Categoria, Livello, Obiettivo E Modalità corrispondono al 100%. 
+   - Usa "CONSIGLI ALTERNATIVI" per tutto il resto. Se non ci sono match ideali, scrivi "Nessun corso corrisponde perfettamente, ma ecco le migliori alternative:".
+2. FEDELTÀ ASSOLUTA: Usa i TITOLI ORIGINALI, le DURATE ESATTE e le ORE SETTIMANALI del database. 
+3. ONESTÀ TECNICA: Per ogni alternativa, spiega chiaramente cosa non coincide (es. "Questo corso richiede 20h/settimana, superando la tua disponibilità di 10h").
+4. MOTIVAZIONE: Spiega perché il corso è comunque interessante.
+5. LINGUA: Rispondi ESCLUSIVAMENTE in italiano.
             `;
             
             const finalContext = [...chatContext, { role: "assistant", content: reply }, { role: "user", content: resultsPrompt }];
