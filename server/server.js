@@ -95,77 +95,53 @@ app.post('/api/chat', async (req, res) => {
     message = message.replace(/<[^>]*>?/gm, ''); // Strip HTML tags
     
     const history = getSession(sessionId);
+    const courses = loadDB().map(entry => entry.metadata);
 
-    // SYSTEM PROMPT: Defines the AI behavior with Catalog Awareness
+    // NEW DYNAMIC FUNNEL LOGIC
+    // We provide a compressed map of ALL 50 courses so the AI can "screen" in real-time
+    const catalogMap = courses.map(c => `- ${c.title} (${c.area}, ${c.level}, ${c.objective}, ${c.remote ? 'Remoto' : 'Presenza'}, ${c.weekly_hours}h/sett)`).join('\n');
+
     const systemPrompt = `
-# ROLE
-You are the "IncluDO Guide" expert. You represent a catalog of OVER 50 professional artisan courses.
+# RUOLO
+Sei l'esperto "IncluDO Guide". Il tuo compito è aiutare l'utente a trovare il corso ideale nel nostro catalogo di 50 corsi.
 
-# INTERNAL CATALOG MAP (Full Matrix Awareness)
-- LEGNO: Full coverage [B, I, A] x [W, H]. Now has BOTH [Presenza] and [Remote] for all main levels. 
-- TESSUTI: The most complete area. [B, I, A] x [W, H] x [Presenza + Remote].
-- CERAMICA: Full coverage [B, I, A] x [W, H] x [Presenza]. Remote options: [Beg+Work], [Beg+Hobby], [Int+Hobby], [Adv+Hobby].
-- PELLE: Full coverage [B, I, A] x [W, H] x [Presenza]. Remote options: [Beg+Hobby], [Int+Work], [Adv+Hobby], [Beg+Work theory].
-- NATURA: Focus on [Remote] for all levels. [Presenza] only for specific [Beg+Hobby] or [Int/Adv+Work].
+# CATALOGO COMPLETO (La tua mappa mentale)
+${catalogMap}
 
-# ORIENTATION RULES
-1. **Catalog Pride**: Mention we have over 50 courses if asked.
-2. **Conversational Tone**: Be warm but DIRECT. DO NOT use technical codes in output.
-3. **Catalog Awareness**: Use the map. If an option is selected, immediately ask for any MISSING parameters to reach the 5/5 goal.
-4. **Closing Focus**: Your main goal is to trigger 'RICERCA_CORSI'. Don't give long generic descriptions before searching; ask the missing questions to get to the real course data.
-5. **Language**: RISPONDI SEMPRE IN ITALIANO.
-6. **Trigger**: Output 'RICERCA_CORSI' only when the 5/5 profile is complete.
+# LOGICA DI SCREENING (L'Imbuto)
+1. **Filtra in Tempo Reale**: Ad ogni messaggio dell'utente, scarta mentalmente i corsi che non corrispondono.
+2. **Guida Attiva**: Informa l'utente di quanti corsi "sopravvivono" alla sua scelta. (Esempio: "Per la Pelle ho 8 corsi disponibili, di cui 3 professionali...").
+3. **Scrematura**: Se l'utente è indeciso, spiega le differenze per aiutarlo a scartare un'intera area.
+4. **Parametri**: Devi comunque assicurarti di conoscere (anche deducendo): Area, Livello, Obiettivo, Modalità. Le ore settimanali sono un filtro finale.
+5. **Chiusura**: Quando restano pochi corsi (1-5) e hai tutti i dati, scrivi "RICERCA_CORSI" per mostrare le schede dettagliate.
+
+# STILE
+Sii un mastro artigiano accogliente, autorevole e molto onesto. Parla SEMPRE in italiano.
     `;
 
     try {
-        const chatContext = [
-            { role: "system", content: systemPrompt },
-            ...history,
-            { role: "user", content: message } 
-        ];
-
+        const chatContext = [{ role: "system", content: systemPrompt }, ...history, { role: "user", content: message }];
         const aiResponse = await getChatResponse(chatContext); 
         let reply = aiResponse.text();
 
-        // RAG TRIGGER: Executes vector search only when all parameters are gathered
         if (reply.includes("RICERCA_CORSI")) {
-            // STEP A: Summarize user profile for accurate vector search
-            const summaryContext = [
-                { role: "system", content: "Create a technical search query including: Category, Level, Objective, Modality, and Time." },
-                ...history,
-                { role: "user", content: message }
-            ];
-            const summaryResult = await getChatResponse(summaryContext);
-            const searchQuery = summaryResult.text();
-
-            // STEP B: Perform Semantic Search
-            const queryVector = await generateEmbedding(searchQuery); 
-            const courses = searchVectors(queryVector, 6); // Broader coverage to ensure matches are found among top results
+            // Final RAG to get descriptions and full skills
+            const queryVector = await generateEmbedding(message + " " + history.map(h => h.content).join(" ")); 
+            const searchResults = searchVectors(queryVector, 10);
             
-            // STEP C: Generate final recommendation based on retrieved data
             const resultsPrompt = `
-OFFICIAL IncluDO Catalog (Use ONLY these!):
-${JSON.stringify(courses.map(c => c.metadata), null, 2)}
+In base alla nostra conversazione, ecco i corsi dal catalogo:
+${JSON.stringify(searchResults.map(r => r.metadata), null, 2)}
 
-In base a questi corsi:
-1. CATEGORIZZA i risultati: 
-   - Usa "CORSI IDEALI" SOLO se Categoria, Livello, Obiettivo E Modalità corrispondono al 100%. 
-   - Usa "CONSIGLI ALTERNATIVI" per tutto il resto.
-2. FEDELTÀ ASSOLUTA E DIVIETO DI INVENZIONE: Usa SOLO i corsi presenti nella lista JSON sopra. È SEVERAMENTE VIETATO inventare nomi di corsi, descrizioni o dettagli che non sono presenti nel database ufficiale. Se hai pochi risultati, mostra solo quelli.
-3. ONESTÀ TECNICA: Per ogni alternativa, spiega chiaramente cosa non coincide.
-4. LINGUA: Rispondi ESCLUSIVAMENTE in italiano.
+1. Mostra i CORSI IDEALI (match 100%) e i CONSIGLI ALTERNATIVI.
+2. Usa TITOLI ORIGINALI e dati esatti. Sii onesto se qualcosa non coincide.
             `;
-            
-            const finalContext = [...chatContext, { role: "assistant", content: reply }, { role: "user", content: resultsPrompt }];
-            const finalResult = await getChatResponse(finalContext);
+            const finalResult = await getChatResponse([...chatContext, { role: "assistant", content: reply }, { role: "user", content: resultsPrompt }]);
             reply = finalResult.text().replace("RICERCA_CORSI", "");
         }
 
-        // Save conversation to session history
-        history.push({ role: "user", content: message });
-        history.push({ role: "assistant", content: reply });
+        history.push({ role: "user", content: message }, { role: "assistant", content: reply });
         saveSession(sessionId, history);
-
         res.json({ reply, history });
     } catch (error) {
         console.error("Chat terminal error:", error);
