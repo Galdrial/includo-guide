@@ -1,6 +1,12 @@
-const OpenAI = require('openai');
-const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '../.env') });
+import OpenAI from 'openai';
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+dotenv.config({ path: path.join(__dirname, '../../.env') });
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -8,9 +14,8 @@ const openai = new OpenAI({
 
 /**
  * GENERATE EMBEDDING
- * Converts a string into a 1536-dimensional vector for semantic search.
  */
-const generateEmbedding = async (text) => {
+export const generateEmbedding = async (text) => {
   if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY.includes('...')) {
       const sum = text.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
       return Array(1536).fill(0).map((_, i) => Math.sin(sum + i) / 2 + 0.5);
@@ -24,9 +29,8 @@ const generateEmbedding = async (text) => {
 
 /**
  * GET CHAT RESPONSE
- * Supports Function Calling (Tools) and returns the full response object.
  */
-const getChatResponse = async (messages, model = "gpt-4o", tools = null) => {
+export const getChatResponse = async (messages, model = "gpt-4o", tools = null) => {
     try {
         if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY.includes('...')) {
             throw new Error("OPENAI_API_KEY non configurata.");
@@ -51,5 +55,3 @@ const getChatResponse = async (messages, model = "gpt-4o", tools = null) => {
         throw error;
     }
 };
-
-module.exports = { generateEmbedding, getChatResponse };
