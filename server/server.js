@@ -14,15 +14,6 @@ app.use(express.json());
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Serve static files from the 'client/dist' directory (after build)
-app.use(express.static(path.join(__dirname, '../client/dist')));
-
-// SPA Fallback Middleware: If no API route matches, serve the React app
-app.use((req, res, next) => {
-  if (req.url.startsWith('/api')) return next();
-  res.sendFile(path.join(__dirname, '../client/dist/index.html'));
-});
-
 // Enterprise Memory: Session store with metadata
 const sessions = {};
 
