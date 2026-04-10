@@ -22,23 +22,20 @@ function App() {
   });
 
   const scrollRef = useRef(null);
-  const inputRef = useRef(null); // Reference for auto-focus
+  const inputRef = useRef(null);
 
-  // Auto-scroll logic
   useEffect(() => {
     if (scrollRef.current) {
         scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, isLoading]);
 
-  // Auto-focus logic: Focus input when loading finishes
   useEffect(() => {
     if (!isLoading && inputRef.current) {
       inputRef.current.focus();
     }
   }, [isLoading]);
 
-  // Initial load
   useEffect(() => {
     const fetchHistory = async () => {
       try {
@@ -96,7 +93,7 @@ function App() {
 
   return (
     <div className="app-container">
-      <header>
+      <header role="banner">
         <Motion.div 
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -106,13 +103,17 @@ function App() {
             <h1>Inclu<span>DO</span> Guide</h1>
             <p className="tagline">Tradizione artigiana, opportunità sociale.</p>
           </div>
-          <button className="reset-chat-btn" onClick={() => setShowResetModal(true)}>
-            <RotateCcw size={16} /> Nuova Chat
+          <button 
+            className="reset-chat-btn" 
+            onClick={() => setShowResetModal(true)}
+            aria-label="Nuova conversazione"
+          >
+            <RotateCcw size={16} aria-hidden="true" /> Nuova Chat
           </button>
         </Motion.div>
       </header>
 
-      <main className="chat-window">
+      <main className="chat-window" role="log" aria-live="polite">
         <div className="messages-area" ref={scrollRef}>
           <AnimatePresence>
             {messages.map((msg, idx) => (
@@ -121,8 +122,10 @@ function App() {
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 className={`message ${msg.role === 'user' ? 'user' : 'bot'}`}
+                role="article"
+                aria-label={msg.role === 'user' ? "Messaggio inviato da te" : "Risposta di IncluDO Guide"}
               >
-                <div className="sender-info">
+                <div className="sender-info" aria-hidden="true">
                   {msg.role === 'user' ? <User size={14} /> : <Sparkles size={14} />}
                   <span>{msg.role === 'user' ? 'Tu' : 'IncluDO Guide'}</span>
                 </div>
@@ -135,7 +138,7 @@ function App() {
             ))}
           </AnimatePresence>
           {isLoading && (
-            <div className="message bot loading">
+            <div className="message bot loading" role="status" aria-label="Caricamento risposta">
               <div className="bubble">
                 <Loader2 className="animate-spin" size={20} />
               </div>
@@ -143,34 +146,52 @@ function App() {
           )}
         </div>
 
-        <form className="input-area" onSubmit={sendMessage}>
+        <form className="input-area" onSubmit={sendMessage} role="search">
           <input 
-            ref={inputRef} // Attached ref for auto-focus
+            ref={inputRef}
             className="chat-input"
             type="text" 
             placeholder={isLoading ? "Sto elaborando i tuoi dati..." : "Scrivi qui il tuo messaggio..."}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             disabled={isLoading}
+            aria-label="Campo di inserimento messaggio"
           />
-          <button className="send-btn" type="submit" disabled={!input.trim() || isLoading}>
-            <Send size={18} />
+          <button 
+            className="send-btn" 
+            type="submit" 
+            disabled={!input.trim() || isLoading}
+            aria-label="Invia messaggio"
+          >
+            <Send size={18} aria-hidden="true" />
           </button>
         </form>
       </main>
 
       {showResetModal && (
-        <div className="modal-overlay">
+        <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
           <Motion.div 
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             className="modal-card"
           >
-            <h3>Reset Chat</h3>
+            <h3 id="modal-title">Reset Chat</h3>
             <p>Sei sicuro di voler ricominciare? Perderai la cronologia attuale.</p>
             <div className="modal-actions">
-              <button className="btn-cancel" onClick={() => setShowResetModal(false)}>Annulla</button>
-              <button className="btn-confirm" onClick={resetChat}>Sì, resetta</button>
+              <button 
+                className="btn-cancel" 
+                onClick={() => setShowResetModal(false)}
+                aria-label="Annulla reset"
+              >
+                Annulla
+              </button>
+              <button 
+                className="btn-confirm" 
+                onClick={resetChat}
+                aria-label="Conferma reset della chat"
+              >
+                Sì, resetta
+              </button>
             </div>
           </Motion.div>
         </div>
