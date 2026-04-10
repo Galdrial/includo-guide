@@ -86,6 +86,11 @@ Genera una risposta di orientamento professionale strutturata in questo ESATTO o
 RISPONDI SEMPRE IN ITALIANO. NON USARE ALTRI FORMATI PER LA TABELLA.
 `;
 
+// Health Check for Uptime Monitoring
+app.get('/api/health', (req, res) => {
+    res.json({ status: "ok", uptime: process.uptime() });
+});
+
 // --- API ENDPOINTS ---
 
 app.get( '/api/history/:sessionId', ( req, res ) => {
