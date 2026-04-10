@@ -94,11 +94,7 @@ function App() {
   return (
     <div className="app-container">
       <header role="banner">
-        <Motion.div 
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="header-container"
-        >
+        <div className="header-container">
           <div className="title-group">
             <h1>Inclu<span>DO</span> Guide</h1>
             <p className="tagline">Tradizione artigiana, opportunità sociale.</p>
@@ -110,7 +106,7 @@ function App() {
           >
             <RotateCcw size={16} aria-hidden="true" /> Nuova Chat
           </button>
-        </Motion.div>
+        </div>
       </header>
 
       <main className="chat-window" role="log" aria-live="polite">
