@@ -5,7 +5,12 @@
     "area": "Legno",
     "duration": "12 settimane",
     "weekly_hours": 20,
-    "skills": ["Levigatura", "Intarsio", "Restauro", "Finiture Naturali"],
+    "skills": [
+      "Levigatura",
+      "Intarsio",
+      "Restauro",
+      "Finiture Naturali"
+    ],
     "remote": false,
     "level": "Principiante",
     "objective": "Lavoro",
@@ -17,7 +22,12 @@
     "area": "Legno",
     "duration": "4 settimane",
     "weekly_hours": 6,
-    "skills": ["Design Digitale", "Assemblaggio", "Finiture", "Project Management"],
+    "skills": [
+      "Design Digitale",
+      "Assemblaggio",
+      "Finiture",
+      "Project Management"
+    ],
     "remote": true,
     "level": "Principiante",
     "objective": "Hobby",
@@ -29,7 +39,11 @@
     "area": "Legno",
     "duration": "16 settimane",
     "weekly_hours": 30,
-    "skills": ["Intarsio Boulle", "Lavorazione Massello", "Restauro Museale"],
+    "skills": [
+      "Intarsio Boulle",
+      "Lavorazione Massello",
+      "Restauro Museale"
+    ],
     "remote": false,
     "level": "Avanzato",
     "objective": "Lavoro",
@@ -41,7 +55,11 @@
     "area": "Legno",
     "duration": "8 settimane",
     "weekly_hours": 15,
-    "skills": ["CAD 3D", "Progettazione Tecnica", "Preventivazione"],
+    "skills": [
+      "CAD 3D",
+      "Progettazione Tecnica",
+      "Preventivazione"
+    ],
     "remote": true,
     "level": "Intermedio",
     "objective": "Lavoro",
@@ -53,7 +71,11 @@
     "area": "Legno",
     "duration": "6 settimane",
     "weekly_hours": 12,
-    "skills": ["Incastri", "Taglio a Misura", "Verniciatura a Cera"],
+    "skills": [
+      "Incastri",
+      "Taglio a Misura",
+      "Verniciatura a Cera"
+    ],
     "remote": false,
     "level": "Intermedio",
     "objective": "Hobby",
@@ -65,7 +87,11 @@
     "area": "Tessuti",
     "duration": "14 settimane",
     "weekly_hours": 25,
-    "skills": ["Taglio e Cucito", "Cartamodelli", "Modelleria Classica"],
+    "skills": [
+      "Taglio e Cucito",
+      "Cartamodelli",
+      "Modelleria Classica"
+    ],
     "remote": false,
     "level": "Principiante",
     "objective": "Lavoro",
@@ -77,7 +103,11 @@
     "area": "Tessuti",
     "duration": "4 settimane",
     "weekly_hours": 5,
-    "skills": ["Rammendo Creativo", "Uso Macchina da Cucire", "Modifiche Abiti"],
+    "skills": [
+      "Rammendo Creativo",
+      "Uso Macchina da Cucire",
+      "Modifiche Abiti"
+    ],
     "remote": true,
     "level": "Principiante",
     "objective": "Hobby",
@@ -89,7 +119,11 @@
     "area": "Tessuti",
     "duration": "20 settimane",
     "weekly_hours": 35,
-    "skills": ["Drappeggio", "Cucito Alta Moda", "Finiture di Lusso"],
+    "skills": [
+      "Drappeggio",
+      "Cucito Alta Moda",
+      "Finiture di Lusso"
+    ],
     "remote": false,
     "level": "Avanzato",
     "objective": "Lavoro",
@@ -101,7 +135,11 @@
     "area": "Tessuti",
     "duration": "10 settimane",
     "weekly_hours": 20,
-    "skills": ["Photoshop per Tessuti", "Moodboard", "Design Pattern"],
+    "skills": [
+      "Photoshop per Tessuti",
+      "Moodboard",
+      "Design Pattern"
+    ],
     "remote": true,
     "level": "Intermedio",
     "objective": "Lavoro",
@@ -113,7 +151,11 @@
     "area": "Tessuti",
     "duration": "8 settimane",
     "weekly_hours": 10,
-    "skills": ["Telaio a Mano", "Fibre Naturali", "Disegno Tessile"],
+    "skills": [
+      "Telaio a Mano",
+      "Fibre Naturali",
+      "Disegno Tessile"
+    ],
     "remote": false,
     "level": "Intermedio",
     "objective": "Hobby",
@@ -125,7 +167,12 @@
     "area": "Ceramica",
     "duration": "12 settimane",
     "weekly_hours": 20,
-    "skills": ["Uso del Tornio", "Finiture", "Cottura", "Smaltatura"],
+    "skills": [
+      "Uso del Tornio",
+      "Finiture",
+      "Cottura",
+      "Smaltatura"
+    ],
     "remote": false,
     "level": "Principiante",
     "objective": "Lavoro",
@@ -137,7 +184,11 @@
     "area": "Ceramica",
     "duration": "4 settimane",
     "weekly_hours": 4,
-    "skills": ["Pizzicato", "Colombino", "Finiture a Freddo"],
+    "skills": [
+      "Pizzicato",
+      "Colombino",
+      "Finiture a Freddo"
+    ],
     "remote": true,
     "level": "Principiante",
     "objective": "Hobby",
@@ -149,7 +200,11 @@
     "area": "Ceramica",
     "duration": "15 settimane",
     "weekly_hours": 25,
-    "skills": ["Formule Smalti", "Cottura Raku", "Gestione Forni"],
+    "skills": [
+      "Formule Smalti",
+      "Cottura Raku",
+      "Gestione Forni"
+    ],
     "remote": false,
     "level": "Avanzato",
     "objective": "Lavoro",
@@ -161,7 +216,11 @@
     "area": "Ceramica",
     "duration": "8 settimane",
     "weekly_hours": 12,
-    "skills": ["Anatomia", "Svuotamento", "Texture Creative"],
+    "skills": [
+      "Anatomia",
+      "Svuotamento",
+      "Texture Creative"
+    ],
     "remote": false,
     "level": "Intermedio",
     "objective": "Hobby",
@@ -173,7 +232,10 @@
     "area": "Ceramica",
     "duration": "6 settimane",
     "weekly_hours": 8,
-    "skills": ["Progettazione Solida", "Modellazione Digitale"],
+    "skills": [
+      "Progettazione Solida",
+      "Modellazione Digitale"
+    ],
     "remote": true,
     "level": "Intermedio",
     "objective": "Hobby",
@@ -185,7 +247,11 @@
     "area": "Pelle",
     "duration": "14 settimane",
     "weekly_hours": 22,
-    "skills": ["Taglio Cuoio", "Cucitura a Mano", "Prototipazione"],
+    "skills": [
+      "Taglio Cuoio",
+      "Cucitura a Mano",
+      "Prototipazione"
+    ],
     "remote": false,
     "level": "Principiante",
     "objective": "Lavoro",
@@ -197,7 +263,11 @@
     "area": "Pelle",
     "duration": "5 settimane",
     "weekly_hours": 6,
-    "skills": ["Assemblaggio", "Tintura Pelle", "Decorazione"],
+    "skills": [
+      "Assemblaggio",
+      "Tintura Pelle",
+      "Decorazione"
+    ],
     "remote": true,
     "level": "Principiante",
     "objective": "Hobby",
@@ -209,7 +279,11 @@
     "area": "Pelle",
     "duration": "18 settimane",
     "weekly_hours": 30,
-    "skills": ["Selleria Equina", "Finiture al Bordo", "Pelli Pregiate"],
+    "skills": [
+      "Selleria Equina",
+      "Finiture al Bordo",
+      "Pelli Pregiate"
+    ],
     "remote": false,
     "level": "Avanzato",
     "objective": "Lavoro",
@@ -221,7 +295,11 @@
     "area": "Pelle",
     "duration": "8 settimane",
     "weekly_hours": 15,
-    "skills": ["Marketing Artigiano", "Distinta Base", "Canali Online"],
+    "skills": [
+      "Marketing Artigiano",
+      "Distinta Base",
+      "Canali Online"
+    ],
     "remote": true,
     "level": "Intermedio",
     "objective": "Lavoro",
@@ -233,7 +311,11 @@
     "area": "Natura",
     "duration": "2 settimane",
     "weekly_hours": 16,
-    "skills": ["Biologia Api", "Uso Affumicatore", "Assaggio Miele"],
+    "skills": [
+      "Biologia Api",
+      "Uso Affumicatore",
+      "Assaggio Miele"
+    ],
     "remote": false,
     "level": "Principiante",
     "objective": "Hobby",
@@ -245,7 +327,11 @@
     "area": "Natura",
     "duration": "16 settimane",
     "weekly_hours": 35,
-    "skills": ["Patologia Apistica", "Allevamento Regine", "Business Apicoltura"],
+    "skills": [
+      "Patologia Apistica",
+      "Allevamento Regine",
+      "Business Apicoltura"
+    ],
     "remote": false,
     "level": "Avanzato",
     "objective": "Lavoro",
@@ -257,7 +343,11 @@
     "area": "Natura",
     "duration": "4 settimane",
     "weekly_hours": 4,
-    "skills": ["Entomologia", "Botanica", "Sostenibilità"],
+    "skills": [
+      "Entomologia",
+      "Botanica",
+      "Sostenibilità"
+    ],
     "remote": true,
     "level": "Principiante",
     "objective": "Hobby",
@@ -269,7 +359,11 @@
     "area": "Natura",
     "duration": "10 settimane",
     "weekly_hours": 20,
-    "skills": ["Fitoterapia", "Essiccazione", "Estrazione Oli"],
+    "skills": [
+      "Fitoterapia",
+      "Essiccazione",
+      "Estrazione Oli"
+    ],
     "remote": false,
     "level": "Intermedio",
     "objective": "Lavoro",
@@ -281,7 +375,11 @@
     "area": "Tessuti",
     "duration": "6 settimane",
     "weekly_hours": 18,
-    "skills": ["Estrazione Pigmenti", "Mordenzatura", "Disegno Tessile"],
+    "skills": [
+      "Estrazione Pigmenti",
+      "Mordenzatura",
+      "Disegno Tessile"
+    ],
     "remote": false,
     "level": "Intermedio",
     "objective": "Lavoro",
@@ -293,7 +391,11 @@
     "area": "Pelle",
     "duration": "7 settimane",
     "weekly_hours": 15,
-    "skills": ["Intaglio Cuoio", "Marcatura a Fuoco", "Modelleria"],
+    "skills": [
+      "Intaglio Cuoio",
+      "Marcatura a Fuoco",
+      "Modelleria"
+    ],
     "remote": false,
     "level": "Intermedio",
     "objective": "Hobby",
@@ -305,7 +407,11 @@
     "area": "Legno",
     "duration": "14 settimane",
     "weekly_hours": 25,
-    "skills": ["Programmazione CNC", "Taglio Laser", "Assemblaggio Meccanico"],
+    "skills": [
+      "Programmazione CNC",
+      "Taglio Laser",
+      "Assemblaggio Meccanico"
+    ],
     "remote": false,
     "level": "Intermedio",
     "objective": "Lavoro",
@@ -317,7 +423,11 @@
     "area": "Legno",
     "duration": "10 settimane",
     "weekly_hours": 8,
-    "skills": ["Design Artistico", "Finiture Preziose", "Progettazione Concettuale"],
+    "skills": [
+      "Design Artistico",
+      "Finiture Preziose",
+      "Progettazione Concettuale"
+    ],
     "remote": true,
     "level": "Avanzato",
     "objective": "Hobby",
@@ -329,7 +439,11 @@
     "area": "Tessuti",
     "duration": "16 settimane",
     "weekly_hours": 25,
-    "skills": ["Costumi d'Epoca", "Drappeggio Scenico", "Accessori Teatrali"],
+    "skills": [
+      "Costumi d'Epoca",
+      "Drappeggio Scenico",
+      "Accessori Teatrali"
+    ],
     "remote": false,
     "level": "Intermedio",
     "objective": "Lavoro",
@@ -341,7 +455,11 @@
     "area": "Ceramica",
     "duration": "12 settimane",
     "weekly_hours": 22,
-    "skills": ["Stampaggio a Gesso", "Colaggio", "Gestione Studio"],
+    "skills": [
+      "Stampaggio a Gesso",
+      "Colaggio",
+      "Gestione Studio"
+    ],
     "remote": false,
     "level": "Intermedio",
     "objective": "Lavoro",
@@ -353,7 +471,11 @@
     "area": "Natura",
     "duration": "6 settimane",
     "weekly_hours": 15,
-    "skills": ["Agricoltura Rigenerativa", "Analisi Terreni", "Sostenibilità"],
+    "skills": [
+      "Agricoltura Rigenerativa",
+      "Analisi Terreni",
+      "Sostenibilità"
+    ],
     "remote": true,
     "level": "Principiante",
     "objective": "Lavoro",
@@ -365,7 +487,11 @@
     "area": "Pelle",
     "duration": "15 settimane",
     "weekly_hours": 28,
-    "skills": ["Modelleria Scarpe", "Montaggio Tomaia", "Controllo Qualità"],
+    "skills": [
+      "Modelleria Scarpe",
+      "Montaggio Tomaia",
+      "Controllo Qualità"
+    ],
     "remote": false,
     "level": "Intermedio",
     "objective": "Lavoro",
@@ -377,7 +503,11 @@
     "area": "Natura",
     "duration": "12 settimane",
     "weekly_hours": 10,
-    "skills": ["Policy Europee", "Carbon Credits", "Rimboschimento"],
+    "skills": [
+      "Policy Europee",
+      "Carbon Credits",
+      "Rimboschimento"
+    ],
     "remote": true,
     "level": "Avanzato",
     "objective": "Lavoro",
@@ -389,7 +519,11 @@
     "area": "Ceramica",
     "duration": "8 settimane",
     "weekly_hours": 4,
-    "skills": ["Estetica", "Analisi Formale", "Museologia"],
+    "skills": [
+      "Estetica",
+      "Analisi Formale",
+      "Museologia"
+    ],
     "remote": true,
     "level": "Avanzato",
     "objective": "Hobby",
@@ -401,7 +535,11 @@
     "area": "Legno",
     "duration": "6 settimane",
     "weekly_hours": 12,
-    "skills": ["Mercato Arredo", "E-commerce Artigiano", "Logistica"],
+    "skills": [
+      "Mercato Arredo",
+      "E-commerce Artigiano",
+      "Logistica"
+    ],
     "remote": true,
     "level": "Principiante",
     "objective": "Lavoro",
@@ -413,7 +551,11 @@
     "area": "Tessuti",
     "duration": "8 settimane",
     "weekly_hours": 6,
-    "skills": ["Biomateriali", "Stampa 3D su Tessuto", "Smart Textiles"],
+    "skills": [
+      "Biomateriali",
+      "Stampa 3D su Tessuto",
+      "Smart Textiles"
+    ],
     "remote": true,
     "level": "Avanzato",
     "objective": "Hobby",
@@ -425,7 +567,11 @@
     "area": "Pelle",
     "duration": "4 settimane",
     "weekly_hours": 8,
-    "skills": ["Rilegatura", "Cucitura Jap", "Incisione Oro"],
+    "skills": [
+      "Rilegatura",
+      "Cucitura Jap",
+      "Incisione Oro"
+    ],
     "remote": false,
     "level": "Principiante",
     "objective": "Hobby",
@@ -437,7 +583,11 @@
     "area": "Natura",
     "duration": "5 settimane",
     "weekly_hours": 6,
-    "skills": ["GIS", "App Botaniche", "Fotografia Macro"],
+    "skills": [
+      "GIS",
+      "App Botaniche",
+      "Fotografia Macro"
+    ],
     "remote": true,
     "level": "Intermedio",
     "objective": "Hobby",
@@ -449,7 +599,11 @@
     "area": "Ceramica",
     "duration": "4 settimane",
     "weekly_hours": 10,
-    "skills": ["Instagram for Makers", "Lightroom", "Personal Branding"],
+    "skills": [
+      "Instagram for Makers",
+      "Lightroom",
+      "Personal Branding"
+    ],
     "remote": true,
     "level": "Principiante",
     "objective": "Lavoro",
@@ -461,7 +615,11 @@
     "area": "Legno",
     "duration": "14 settimane",
     "weekly_hours": 15,
-    "skills": ["Sgorbia", "Scultura Organica", "Finiture ad Olio"],
+    "skills": [
+      "Sgorbia",
+      "Scultura Organica",
+      "Finiture ad Olio"
+    ],
     "remote": false,
     "level": "Avanzato",
     "objective": "Hobby",
@@ -473,7 +631,11 @@
     "area": "Tessuti",
     "duration": "5 settimane",
     "weekly_hours": 6,
-    "skills": ["Punto Croce", "Macramè", "Composizione Cromatica"],
+    "skills": [
+      "Punto Croce",
+      "Macramè",
+      "Composizione Cromatica"
+    ],
     "remote": false,
     "level": "Principiante",
     "objective": "Hobby",
@@ -485,7 +647,11 @@
     "area": "Pelle",
     "duration": "8 settimane",
     "weekly_hours": 10,
-    "skills": ["Modellazione Scarpe 3D", "Rendering Lusso", "Texturing"],
+    "skills": [
+      "Modellazione Scarpe 3D",
+      "Rendering Lusso",
+      "Texturing"
+    ],
     "remote": true,
     "level": "Avanzato",
     "objective": "Hobby",
@@ -497,7 +663,11 @@
     "area": "Natura",
     "duration": "10 settimane",
     "weekly_hours": 12,
-    "skills": ["Etologia Rapaci", "Addestramento", "Ambiente"],
+    "skills": [
+      "Etologia Rapaci",
+      "Addestramento",
+      "Ambiente"
+    ],
     "remote": false,
     "level": "Avanzato",
     "objective": "Hobby",
@@ -509,7 +679,11 @@
     "area": "Ceramica",
     "duration": "12 settimane",
     "weekly_hours": 10,
-    "skills": ["Porcellana", "Cottura a Legna", "Smalti Cenere"],
+    "skills": [
+      "Porcellana",
+      "Cottura a Legna",
+      "Smalti Cenere"
+    ],
     "remote": false,
     "level": "Avanzato",
     "objective": "Hobby",
@@ -521,7 +695,11 @@
     "area": "Legno",
     "duration": "6 settimane",
     "weekly_hours": 5,
-    "skills": ["Identificazione Stili", "Mappatura Danni", "Teoria del Restauro"],
+    "skills": [
+      "Identificazione Stili",
+      "Mappatura Danni",
+      "Teoria del Restauro"
+    ],
     "remote": true,
     "level": "Intermedio",
     "objective": "Hobby",
@@ -533,7 +711,11 @@
     "area": "Tessuti",
     "duration": "10 settimane",
     "weekly_hours": 15,
-    "skills": ["Punching Carte", "Intreccio Complesso", "Fibre Nobili"],
+    "skills": [
+      "Punching Carte",
+      "Intreccio Complesso",
+      "Fibre Nobili"
+    ],
     "remote": false,
     "level": "Avanzato",
     "objective": "Hobby",
@@ -545,7 +727,11 @@
     "area": "Pelle",
     "duration": "8 settimane",
     "weekly_hours": 20,
-    "skills": ["Normative Sicurezza", "Layout Laboratorio", "Certificazioni"],
+    "skills": [
+      "Normative Sicurezza",
+      "Layout Laboratorio",
+      "Certificazioni"
+    ],
     "remote": true,
     "level": "Principiante",
     "objective": "Lavoro",
@@ -557,7 +743,11 @@
     "area": "Natura",
     "duration": "10 settimane",
     "weekly_hours": 12,
-    "skills": ["Burocrazia Bio", "PAC Agricola", "Software Gestionali"],
+    "skills": [
+      "Burocrazia Bio",
+      "PAC Agricola",
+      "Software Gestionali"
+    ],
     "remote": true,
     "level": "Intermedio",
     "objective": "Lavoro",
@@ -569,7 +759,11 @@
     "area": "Ceramica",
     "duration": "5 settimane",
     "weekly_hours": 12,
-    "skills": ["Display Prodotti", "Psicologia Colore", "Store Design"],
+    "skills": [
+      "Display Prodotti",
+      "Psicologia Colore",
+      "Store Design"
+    ],
     "remote": true,
     "level": "Intermedio",
     "objective": "Lavoro",
@@ -581,7 +775,11 @@
     "area": "Legno",
     "duration": "14 settimane",
     "weekly_hours": 10,
-    "skills": ["Project Control", "Appalti Lusso", "Normative Internazionali"],
+    "skills": [
+      "Project Control",
+      "Appalti Lusso",
+      "Normative Internazionali"
+    ],
     "remote": true,
     "level": "Avanzato",
     "objective": "Lavoro",
@@ -593,7 +791,11 @@
     "area": "Tessuti",
     "duration": "6 settimane",
     "weekly_hours": 8,
-    "skills": ["Restyling", "Cucito Artistico", "Eco-design"],
+    "skills": [
+      "Restyling",
+      "Cucito Artistico",
+      "Eco-design"
+    ],
     "remote": true,
     "level": "Intermedio",
     "objective": "Hobby",

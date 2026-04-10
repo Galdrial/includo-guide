@@ -1,47 +1,61 @@
 import { render, screen } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import App from './App';
-import axios from 'axios';
+
+const renderApp = async () => {
+  render( <App /> );
+  await screen.findByText( /Le nostre aree di eccellenza sono/i );
+};
 
 // Mock axios to prevent network errors during UI tests
-vi.mock('axios', () => {
+vi.mock( 'axios', () => {
   return {
     default: {
-      get: vi.fn().mockResolvedValue({ data: { history: [] } }),
-      post: vi.fn().mockResolvedValue({ data: { success: true } }),
+      get: vi.fn().mockResolvedValue( { data: { history: [] } } ),
+      post: vi.fn().mockResolvedValue( { data: { success: true } } ),
     }
   };
-});
+} );
 
-describe('IncluDO Frontend Integration', () => {
+// Mock localStorage
+Object.defineProperty( window, 'localStorage', {
+  value: {
+    getItem: vi.fn().mockReturnValue( null ),
+    setItem: vi.fn(),
+    removeItem: vi.fn(),
+    clear: vi.fn(),
+  },
+  writable: true
+} );
 
-  it('renders the brand title correctly', () => {
-    render(<App />);
-    const titleElement = screen.getByText(/Inclu/i);
-    expect(titleElement).toBeInTheDocument();
-    expect(screen.getByText('DO')).toBeInTheDocument();
-  });
+describe( 'IncluDO Frontend Integration', () => {
 
-  it('displays the welcome message with categories', async () => {
-    render(<App />);
-    // We use findByText because the message is added in an useEffect
-    const welcome = await screen.findByText(/Le nostre aree di eccellenza sono/i);
-    expect(welcome).toBeInTheDocument();
-    
-    const categories = await screen.findByText(/Legno, Tessuti, Ceramica, Pelle e Natura/i);
-    expect(categories).toBeInTheDocument();
-  });
+  it( 'renders the brand title correctly', async () => {
+    await renderApp();
+    const titleElement = screen.getByRole( 'heading', { name: /IncluDO Guide/i } );
+    expect( titleElement ).toBeInTheDocument();
+    expect( screen.getByText( 'DO' ) ).toBeInTheDocument();
+  } );
 
-  it('has correct ARIA roles for accessibility', () => {
-    render(<App />);
-    expect(screen.getByRole('banner')).toBeInTheDocument();
-    expect(screen.getByRole('log')).toBeInTheDocument();
-  });
+  it( 'displays the welcome message with categories', async () => {
+    await renderApp();
+    const welcome = screen.getByText( /Le nostre aree di eccellenza sono/i );
+    expect( welcome ).toBeInTheDocument();
 
-  it('input field is present and accessible', async () => {
-    render(<App />);
-    const input = await screen.findByRole('textbox');
-    expect(input).toBeInTheDocument();
-  });
+    const categories = screen.getByText( /Legno, Tessuti, Ceramica, Pelle e Natura/i );
+    expect( categories ).toBeInTheDocument();
+  } );
 
-});
+  it( 'has correct ARIA roles for accessibility', async () => {
+    await renderApp();
+    expect( screen.getByRole( 'banner' ) ).toBeInTheDocument();
+    expect( screen.getByRole( 'log' ) ).toBeInTheDocument();
+  } );
+
+  it( 'input field is present and accessible', async () => {
+    await renderApp();
+    const input = screen.getByRole( 'textbox' );
+    expect( input ).toBeInTheDocument();
+  } );
+
+} );

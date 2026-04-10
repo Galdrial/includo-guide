@@ -6,8 +6,18 @@ import { app } from './server.js';
 vi.mock('openai', () => {
   return {
     default: vi.fn().mockImplementation(() => ({
-      chat: { completions: { create: vi.fn() } },
-      embeddings: { create: vi.fn() }
+      chat: { 
+        completions: { 
+          create: vi.fn().mockResolvedValue({
+            choices: [{ message: { content: "Mocked AI Response" } }]
+          }) 
+        } 
+      },
+      embeddings: { 
+        create: vi.fn().mockResolvedValue({
+          data: [{ embedding: Array(1536).fill(0.1) }]
+        }) 
+      }
     }))
   };
 });
@@ -29,18 +39,14 @@ describe('API Endpoints (Integration)', () => {
     expect(res.body.success).toBe(true);
   });
 
-  // Note: We avoid testing real OpenAI calls during integration tests to save costs/time, 
-  // but we can check if the endpoint is reachable.
-  it('POST /api/chat should handle requests (Basic structure test)', async () => {
-    // We send a request and if it errors out due to missing API KEY in test env, 
-    // it still proves it hit the handler.
+  it('POST /api/chat should handle requests with a valid AI response', async () => {
     const res = await request(app)
       .post('/api/chat')
-      .send({ message: 'ciao', sessionId: 'test_session_123' });
+      .send({ message: 'vorrei imparare il legno', sessionId: 'test_session_123' });
     
-    // In a real test env with key, it would be 200.
-    // Without key or real AI, we at least expect it not to be 404.
-    expect(res.status).not.toBe(404);
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('reply');
+    expect(typeof res.body.reply).toBe('string');
   });
 
 });

@@ -1,21 +1,39 @@
+import cors from 'cors';
 import dotenv from 'dotenv';
 import express from 'express';
-import cors from 'cors';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { getChatResponse, generateEmbedding } from './utils/ai.js';
+import { generateEmbedding, getChatResponse } from './utils/ai.js';
 import { searchVectors } from './utils/db.js';
 
 dotenv.config();
 const app = express();
-app.use(cors());
-app.use(express.json());
+app.use( cors() );
+app.use( express.json() );
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __filename = fileURLToPath( import.meta.url );
+const __dirname = path.dirname( __filename );
 
-// Enterprise Memory: Session store with metadata
-const sessions = {};
+// Enterprise Memory: Session store with persistence
+const SESSIONS_PATH = path.join( __dirname, 'data/sessions.json' );
+
+let sessions = {};
+try {
+    if ( fs.existsSync( SESSIONS_PATH ) ) {
+        sessions = JSON.parse( fs.readFileSync( SESSIONS_PATH, 'utf8' ) );
+    }
+} catch ( err ) {
+    console.error( "Failed to load sessions:", err );
+}
+
+const saveSessions = () => {
+    try {
+        fs.writeFileSync( SESSIONS_PATH, JSON.stringify( sessions, null, 2 ) );
+    } catch ( err ) {
+        console.error( "Failed to save sessions:", err );
+    }
+};
 
 // --- PROMPT FACTORY: Modular approach suggested by info.txt (line 555) ---
 
@@ -40,17 +58,17 @@ Guida l'utente nella scoperta del suo talento e consiglia i 2 corsi migliori dal
 Accogliente, professionale, umano. Rispondi in italiano. 👋
 `;
 
-const buildResultsPrompt = (profile, matches) => `
+const buildResultsPrompt = ( profile, matches ) => `
 # ISTRUZIONI DI OUTPUT (SINTESI RAG)
 
 ## DATI UTENTE
 \`\`\`json
-${JSON.stringify(profile, null, 2)}
+${JSON.stringify( profile, null, 2 )}
 \`\`\`
 
 ## RISULTATI CATALOGO
 \`\`\`json
-${JSON.stringify(matches, null, 2)}
+${JSON.stringify( matches, null, 2 )}
 \`\`\`
 
 # COMPITO
@@ -70,34 +88,65 @@ RISPONDI SEMPRE IN ITALIANO. NON USARE ALTRI FORMATI PER LA TABELLA.
 
 // --- API ENDPOINTS ---
 
-app.get('/api/history/:sessionId', (req, res) => {
+app.get( '/api/history/:sessionId', ( req, res ) => {
     const history = sessions[req.params.sessionId] || [{ role: "system", content: buildSystemPrompt() }];
     // Filter out ANY technical message: system, tool, tool_calls, or internal synthesis prompts
-    const cleanHistory = history.filter(m => {
-        const isUserOrAssistant = (m.role === 'user' || m.role === 'assistant');
+    const cleanHistory = history.filter( m => {
+        const isUserOrAssistant = ( m.role === 'user' || m.role === 'assistant' );
         const hasContent = m.content && m.content.length > 0;
-        const isNotInternalPrompt = !String(m.content).includes('# ISTRUZIONI DI OUTPUT');
+        const isNotInternalPrompt = !String( m.content ).includes( '# ISTRUZIONI DI OUTPUT' );
         const isNotToolMessage = !m.tool_calls && m.role !== 'tool';
-        
+
         return isUserOrAssistant && hasContent && isNotInternalPrompt && isNotToolMessage;
-    });
-    res.json({ history: cleanHistory });
-});
+    } );
+    res.json( { history: cleanHistory } );
+} );
 
-app.post('/api/reset', (req, res) => {
+app.post( '/api/reset', ( req, res ) => {
     delete sessions[req.body.sessionId];
-    res.json({ success: true });
-});
+    saveSessions();
+    res.json( { success: true } );
+} );
 
-app.post('/api/chat', async (req, res) => {
+// Admin Ingest: Sync courses and generate vectors
+app.post( '/api/admin/ingest', async ( req, res ) => {
+    try {
+        const courses = req.body;
+        if ( !Array.isArray( courses ) ) return res.status( 400 ).json( { error: "Input must be a course array" } );
+
+        console.log( `🛠️ Syncing ${courses.length} courses...` );
+        const vectors = [];
+
+        for ( const course of courses ) {
+            // Generate a semantic string for the embedding
+            const textToEmbed = `${course.title} ${course.area} ${course.description} ${course.skills.join( ' ' )}`;
+            const vector = await generateEmbedding( textToEmbed );
+            vectors.push( { id: course.id, vector, metadata: course } );
+        }
+
+        const COURSES_PATH = path.join( __dirname, 'data/courses.json' );
+        const VECTOR_PATH = path.join( __dirname, 'data/vector_db.json' );
+
+        fs.writeFileSync( COURSES_PATH, JSON.stringify( courses, null, 2 ) );
+        fs.writeFileSync( VECTOR_PATH, JSON.stringify( vectors, null, 2 ) );
+
+        console.log( "✅ Sync complete." );
+        res.json( { success: true, count: courses.length } );
+    } catch ( error ) {
+        console.error( "Ingest error:", error );
+        res.status( 500 ).json( { error: error.message } );
+    }
+} );
+
+app.post( '/api/chat', async ( req, res ) => {
     const { message, sessionId } = req.body;
-    
-    if (!sessions[sessionId]) {
+
+    if ( !sessions[sessionId] ) {
         sessions[sessionId] = [{ role: "system", content: buildSystemPrompt() }];
     }
-    
+
     let history = sessions[sessionId];
-    history.push({ role: "user", content: message });
+    history.push( { role: "user", content: message } );
 
     try {
         const tools = [{
@@ -126,50 +175,51 @@ app.post('/api/chat', async (req, res) => {
             }
         }];
 
-        const response = await getChatResponse(history, "gpt-4o-mini", tools);
+        const response = await getChatResponse( history, "gpt-4o-mini", tools );
         let aiMessage = response.choices[0].message;
 
-        if (aiMessage.tool_calls) {
+        if ( aiMessage.tool_calls ) {
             const toolCall = aiMessage.tool_calls[0];
-            const args = JSON.parse(toolCall.function.arguments);
-            
-            const vector = await generateEmbedding(args.search_query);
-            const matches = searchVectors(vector, 10).map(m => m.metadata);
-            
+            const args = JSON.parse( toolCall.function.arguments );
+
+            const vector = await generateEmbedding( args.search_query );
+            const matches = searchVectors( vector, 2 ).map( m => m.metadata );
+
             // SYNTHESIS: High-authority context with System-level formatting rules
             const synthesisContext = [
                 ...history,
                 aiMessage,
-                { role: "tool", tool_call_id: toolCall.id, content: JSON.stringify(matches) },
-                { 
-                  role: "system", 
-                  content: "ESPERTO ORIENTATORE: Sintetizza i risultati. USA SEMPRE UNA TABELLA MARKDOWN CON LE BARRE '|'. ESEMPIO: | Titolo | Ore | Modalità | Match | \n | :--- | :--- | :--- | :--- | \n | Nome | 20h | ... | ... |. NON USARE MAI SPAZI O TAB PER LE COLONNE." 
+                { role: "tool", tool_call_id: toolCall.id, content: JSON.stringify( matches ) },
+                {
+                    role: "system",
+                    content: "ESPERTO ORIENTATORE: Sintetizza i risultati. CONSIGLIA SOLO I 2 CORSI MIGLIORI. USA SEMPRE UNA TABELLA MARKDOWN CON LE BARRE '|'. ESEMPIO: | Titolo | Ore | Modalità | Match | \n | :--- | :--- | :--- | :--- | \n | Nome | 20h | ... | ... |. NON USARE MAI SPAZI O TAB PER LE COLONNE."
                 },
-                { role: "user", content: buildResultsPrompt(args.user_profile, matches) }
+                { role: "user", content: buildResultsPrompt( args.user_profile, matches ) }
             ];
 
-            const finalResponse = await getChatResponse(synthesisContext, "gpt-4o-mini");
+            const finalResponse = await getChatResponse( synthesisContext, "gpt-4o-mini" );
             aiMessage = finalResponse.choices[0].message;
-            
+
             // Persistence: ONLY save the final synthesize message to the long-term history
-            history.push({ role: "assistant", content: aiMessage.content });
+            history.push( { role: "assistant", content: aiMessage.content } );
         } else {
             // Standard conversational message
-            history.push(aiMessage);
+            history.push( aiMessage );
         }
 
         // Memory management: Dynamic sliding window to keep context efficient
-        if (history.length > 20) history = [history[0], ...history.slice(-18)];
+        if ( history.length > 20 ) history = [history[0], ...history.slice( -18 )];
         sessions[sessionId] = history;
+        saveSessions();
 
-        res.json({ reply: aiMessage.content, history });
-    } catch (error) {
-        console.error("Enterprise Server Error:", error);
-        res.status(500).json({ error: "Errore interno al server." });
+        res.json( { reply: aiMessage.content, history } );
+    } catch ( error ) {
+        console.error( "Enterprise Server Error:", error );
+        res.status( 500 ).json( { error: "Errore interno al server." } );
     }
-});
+} );
 
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => console.log(`IncluDO Enterprise Node.js running on port ${PORT}`));
+app.listen( PORT, () => console.log( `IncluDO Enterprise Node.js running on port ${PORT}` ) );
 
 export { app };
