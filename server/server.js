@@ -190,9 +190,9 @@ app.post( '/api/chat', async ( req, res ) => {
                 ...history,
                 aiMessage,
                 { role: "tool", tool_call_id: toolCall.id, content: JSON.stringify( matches ) },
-                {
-                    role: "system",
-                    content: "ESPERTO ORIENTATORE: Sintetizza i risultati. CONSIGLIA SOLO I 2 CORSI MIGLIORI. USA SEMPRE UNA TABELLA MARKDOWN CON LE BARRE '|'. ESEMPIO: | Titolo | Ore | Modalità | Match | \n | :--- | :--- | :--- | :--- | \n | Nome | 20h | ... | ... |. NON USARE MAI SPAZI O TAB PER LE COLONNE."
+                { 
+                  role: "system", 
+                  content: "ESPERTO ORIENTATORE: Sintetizza i risultati. CONSIGLIA SOLO I 2 CORSI MIGLIORI. USA OBBLIGATORIAMENTE UNA TABELLA MARKDOWN CON LE BARRE '|'. Nelle colonne 'Ore' inserisci sempre le ore SETTIMANALI (weekly_hours), non quelle totali. ESEMPIO: | Titolo | Ore/sett | Match | \n | :--- | :--- | :--- | \n | Nome | 6h | 80% |. Sii sintetico e non ripetere saluti." 
                 },
                 { role: "user", content: buildResultsPrompt( args.user_profile, matches ) }
             ];
