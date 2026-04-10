@@ -28,13 +28,12 @@ body {
   background: var(--bg);
   background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
   color: var(--text);
-  height: 100vh;
+  min-height: 100dvh; /* Dynamic viewport height for mobile */
   margin: 0;
-  overflow: hidden;
 }
 
 #root {
-  height: 100%;
+  height: 100dvh;
 }
 
 /* 
@@ -43,8 +42,8 @@ body {
 .app-container {
   max-width: 1200px;
   margin: 0 auto;
-  height: 100%;
-  padding: 2rem;
+  height: 100dvh;
+  padding: 1.5rem;
   display: flex;
   flex-direction: column;
 }
@@ -348,9 +347,67 @@ p.tagline {
   box-shadow: 0 4px 15px rgba(230, 126, 34, 0.2);
 }
 
-.btn-confirm:hover {
-  background: #D35400;
-  transform: translateY(-2px);
+/* 
+ * RESPONSIVE DESIGN (ENTERPRISE GRADE)
+ */
+@media (max-width: 768px) {
+  .app-container {
+    padding: 0.75rem; /* Maximize screen space */
+  }
+
+  header {
+    margin-bottom: 1rem;
+  }
+
+  h1 {
+    font-size: 1.8rem; /* Scale down title */
+  }
+
+  p.tagline {
+    font-size: 0.85rem;
+  }
+
+  .title-group {
+    max-width: 70%;
+  }
+
+  .reset-chat-btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.8rem;
+  }
+
+  .chat-window {
+    border-radius: 16px; /* Slightly sharper for mobile */
+  }
+
+  .messages-area {
+    padding: 1rem;
+    gap: 1rem;
+  }
+
+  .message {
+    max-width: 98%; /* Use full width on small screens */
+  }
+
+  .bubble {
+    padding: 1rem;
+    font-size: 0.95rem;
+    border-radius: 16px;
+  }
+
+  .input-area {
+    padding: 1rem;
+  }
+
+  .chat-input {
+    font-size: 0.95rem;
+    padding: 0.8rem 1.2rem;
+  }
+
+  .send-btn {
+    width: 44px;
+    height: 44px;
+  }
 }
 
 /* 
