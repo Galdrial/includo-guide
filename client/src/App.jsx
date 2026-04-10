@@ -45,7 +45,7 @@ function App() {
         } else {
           setMessages([{
             role: 'assistant',
-            content: "Ciao! Benvenuto in IncluDO Guide. Sono qui per aiutarti a scoprire il tuo talento artigianale nelle nostre aree di eccellenza. Dimmi pure: cosa ti piacerebbe imparare a fare con le mani?"
+            content: "Ciao! Benvenuto in IncluDO Guide. Sono qui per aiutarti a scoprire il tuo talento artigianale. Le nostre aree di eccellenza sono: **Legno, Tessuti, Ceramica, Pelle e Natura**. Dimmi pure: quale di queste ti piacerebbe esplorare?"
           }]);
         }
       } catch (err) {
@@ -60,7 +60,7 @@ function App() {
       await axios.post(`${API_BASE}/reset`, { sessionId });
       setMessages([{
         role: 'assistant',
-        content: "Reset completato! Iniziamo da zero. Cosa ti appassiona del mondo dell'artigianato?"
+        content: "Reset completato! Iniziamo da zero. Le nostre aree sono: **Legno, Tessuti, Ceramica, Pelle e Natura**. Quale ti incuriosisce di più?"
       }]);
       setShowResetModal(false);
     } catch (err) {
