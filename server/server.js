@@ -18,7 +18,7 @@ const __dirname = path.dirname(__filename);
 app.use(express.static(path.join(__dirname, '../client/dist')));
 
 // Catch-all route to serve the React app (SPA support)
-app.get('*', (req, res, next) => {
+app.get('/(.*)', (req, res, next) => {
   // If request is for API, don't serve index.html
   if (req.url.startsWith('/api')) return next();
   res.sendFile(path.join(__dirname, '../client/dist/index.html'));
