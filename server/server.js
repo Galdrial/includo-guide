@@ -1,12 +1,28 @@
-require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
-const { getChatResponse, generateEmbedding } = require('./utils/ai');
-const { searchVectors } = require('./utils/db');
+import dotenv from 'dotenv';
+import express from 'express';
+import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { getChatResponse, generateEmbedding } from './utils/ai.js';
+import { searchVectors } from './utils/db.js';
 
+dotenv.config();
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Serve static files from the 'client/dist' directory (after build)
+app.use(express.static(path.join(__dirname, '../client/dist')));
+
+// Catch-all route to serve the React app (SPA support)
+app.get('*', (req, res, next) => {
+  // If request is for API, don't serve index.html
+  if (req.url.startsWith('/api')) return next();
+  res.sendFile(path.join(__dirname, '../client/dist/index.html'));
+});
 
 // Enterprise Memory: Session store with metadata
 const sessions = {};
