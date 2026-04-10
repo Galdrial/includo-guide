@@ -145,7 +145,7 @@ p.tagline {
  * MESSAGING BUBBLES
  */
 .message {
-  max-width: 80%;
+  max-width: 85%;
   display: flex;
   flex-direction: column;
 }
@@ -155,6 +155,7 @@ p.tagline {
 }
 
 .message.bot {
+  max-width: 95%; /* Wider bubbles for Enterprise tables */
   align-self: flex-start;
 }
 
@@ -162,9 +163,60 @@ p.tagline {
   padding: 1.2rem 1.5rem;
   border-radius: 20px;
   font-size: 1rem;
-  line-height: 1.5;
+  line-height: 1.6;
   box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  width: fit-content;
+  min-width: 100px;
 }
+
+/* --- ENTERPRISE MARKDOWN STYLING --- */
+.bubble table {
+  width: 100%;
+  min-width: 100%; /* Force table to fill the bubble */
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: 1.2rem 0;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  overflow-x: auto;
+  display: table; /* Reset to table to ensure width: 100% works best */
+}
+
+.user .bubble table {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.bubble th {
+  background: rgba(14, 21, 30, 0.05);
+  padding: 1rem;
+  text-align: left;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 2px solid rgba(0, 0, 0, 0.05);
+}
+
+.user .bubble th {
+  background: rgba(255, 255, 255, 0.1);
+  border-bottom-color: rgba(255, 255, 255, 0.2);
+}
+
+.bubble td {
+  padding: 1rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.02);
+  font-size: 0.95rem;
+  vertical-align: middle;
+}
+
+.user .bubble td {
+  border-bottom-color: rgba(255, 255, 255, 0.05);
+}
+
+.bubble p { margin-bottom: 0.8rem; }
+.bubble p:last-child { margin-bottom: 0; }
+.bubble ul, .bubble ol { padding-left: 1.2rem; margin: 0.8rem 0; }
+.bubble li { margin-bottom: 0.4rem; }
 
 .user .bubble {
   background: linear-gradient(135deg, var(--primary) 0%, #D35400 100%);
@@ -184,7 +236,7 @@ p.tagline {
 .input-area {
   padding: 1.5rem 2rem;
   background: white;
-  border-top: 1px solid #eee;
+  border-top: 1px solid #edeff2;
   display: flex;
   gap: 1rem;
   align-items: center;
@@ -220,15 +272,14 @@ p.tagline {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.send-btn:hover {
+.send-btn:hover:not(:disabled) {
   transform: scale(1.1) rotate(5deg);
   background: var(--primary);
 }
 
 .send-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.3;
   cursor: not-allowed;
-  transform: none;
 }
 
 /* 
@@ -300,21 +351,34 @@ p.tagline {
 .btn-confirm:hover {
   background: #D35400;
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(211, 84, 0, 0.3);
-}
-
-.btn-cancel:hover {
-  background: #e9ecef;
 }
 
 /* 
- * MICRO-ANIMATIONS
+ * ANIMATIONS
  */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 .message {
   animation: fadeIn 0.4s ease-out forwards;
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+.bot.loading .bubble {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60px;
+  width: 80px;
+  background: white;
 }

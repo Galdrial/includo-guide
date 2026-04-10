@@ -2,22 +2,17 @@ import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { Send, Sparkles, User, Loader2, RotateCcw } from 'lucide-react';
 import { motion as Motion, AnimatePresence } from 'framer-motion';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
-// API configuration based on local server port
-// Configuration for API endpoint - Localhost for dev, Environment variable for production
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3001/api';
 
-/**
- * MAIN APPLICATION COMPONENT
- * Handles the state, conversation flow, and RAG-enabled chat interface.
- */
 function App() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
   
-  // SESSION PERSISTENCE: Retrieve or generate a unique sessionId from localStorage
   const [sessionId] = useState(() => {
     const saved = localStorage.getItem('includo_sid');
     if (saved) return saved;
@@ -27,21 +22,23 @@ function App() {
   });
 
   const scrollRef = useRef(null);
+  const inputRef = useRef(null); // Reference for auto-focus
 
-  /**
-   * AUTO-SCROLL LOGIC
-   * Ensures the latest message is always visible.
-   */
+  // Auto-scroll logic
   useEffect(() => {
     if (scrollRef.current) {
         scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, isLoading]);
 
-  /**
-   * INITIALIZATION EFFECT
-   * Loads conversation history from the server to maintain persistence across reloads.
-   */
+  // Auto-focus logic: Focus input when loading finishes
+  useEffect(() => {
+    if (!isLoading && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [isLoading]);
+
+  // Initial load
   useEffect(() => {
     const fetchHistory = async () => {
       try {
@@ -49,23 +46,31 @@ function App() {
         if (data.history && data.history.length > 0) {
           setMessages(data.history);
         } else {
-          // Initialize with a warm welcome message if no history exists
           setMessages([{
             role: 'assistant',
-            content: "Ciao! Benvenuto in IncluDO Guide. Sono qui per aiutarti a scoprire il tuo talento artigianale nelle nostre aree di eccellenza: Legno, Tessuti, Ceramica, Pelle e Natura. Vuoi raccontarmi un po' cosa ti piace fare con le mani o quali sono i tuoi interessi?"
+            content: "Ciao! Benvenuto in IncluDO Guide. Sono qui per aiutarti a scoprire il tuo talento artigianale nelle nostre aree di eccellenza. Dimmi pure: cosa ti piacerebbe imparare a fare con le mani?"
           }]);
         }
       } catch (err) {
-        console.error("Critical error loading history:", err);
+        console.error("History fetch failed:", err);
       }
     };
     fetchHistory();
   }, [sessionId]);
 
-  /**
-   * MESSAGE SUBMISSION HANDLER
-   * Sends user input to the backend and updates the UI with the AI response.
-   */
+  const resetChat = async () => {
+    try {
+      await axios.post(`${API_BASE}/reset`, { sessionId });
+      setMessages([{
+        role: 'assistant',
+        content: "Reset completato! Iniziamo da zero. Cosa ti appassiona del mondo dell'artigianato?"
+      }]);
+      setShowResetModal(false);
+    } catch (err) {
+      console.error("Reset failed:", err);
+    }
+  };
+
   const sendMessage = async (e) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
@@ -80,11 +85,10 @@ function App() {
         message: input,
         sessionId: sessionId
       });
-      
       setMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
     } catch (err) {
-      console.error("Chat Interaction Error:", err);
-      setMessages(prev => [...prev, { role: 'assistant', content: "Ops, c'è stato un piccolo errore tecnico. Riprova tra un momento!" }]);
+      console.error("Chat error:", err);
+      setMessages(prev => [...prev, { role: 'assistant', content: "Errore di connessione. Riprova!" }]);
     } finally {
       setIsLoading(false);
     }
@@ -92,7 +96,6 @@ function App() {
 
   return (
     <div className="app-container">
-      {/* HEADER SECTION: Title and Session Reset */}
       <header>
         <Motion.div 
             initial={{ opacity: 0, y: -20 }}
@@ -101,28 +104,22 @@ function App() {
         >
           <div className="title-group">
             <h1>Inclu<span>DO</span> Guide</h1>
-            <p className="tagline">Costruiamo ponti tra tradizioni e opportunità.</p>
+            <p className="tagline">Tradizione artigiana, opportunità sociale.</p>
           </div>
-          <button 
-            className="reset-chat-btn"
-            onClick={() => setShowResetModal(true)}
-            title="Reset Conversation"
-          >
+          <button className="reset-chat-btn" onClick={() => setShowResetModal(true)}>
             <RotateCcw size={16} /> Nuova Chat
           </button>
         </Motion.div>
       </header>
 
-      {/* CHAT INTERFACE: Message History & Input */}
       <main className="chat-window">
         <div className="messages-area" ref={scrollRef}>
           <AnimatePresence>
             {messages.map((msg, idx) => (
               <Motion.div 
                 key={idx}
-                initial={{ opacity: 0, y: 15, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ duration: 0.3 }}
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
                 className={`message ${msg.role === 'user' ? 'user' : 'bot'}`}
               >
                 <div className="sender-info">
@@ -130,15 +127,13 @@ function App() {
                   <span>{msg.role === 'user' ? 'Tu' : 'IncluDO Guide'}</span>
                 </div>
                 <div className="bubble">
-                  {msg.content.split('\n').map((line, i) => (
-                    <p key={i}>{line}</p>
-                  ))}
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {msg.content}
+                  </ReactMarkdown>
                 </div>
               </Motion.div>
             ))}
           </AnimatePresence>
-          
-          {/* VISUAL FEEDBACK: Loading indicator for AI generation */}
           {isLoading && (
             <div className="message bot loading">
               <div className="bubble">
@@ -148,55 +143,38 @@ function App() {
           )}
         </div>
 
-        {/* INPUT AREA: Text input and Send button */}
-        <form onSubmit={sendMessage} className="input-area">
+        <form className="input-area" onSubmit={sendMessage}>
           <input 
-            type="text" 
-            placeholder="Scrivi qui la tua risposta..."
+            ref={inputRef} // Attached ref for auto-focus
             className="chat-input"
+            type="text" 
+            placeholder={isLoading ? "Sto elaborando i tuoi dati..." : "Scrivi qui il tuo messaggio..."}
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            autoFocus
+            disabled={isLoading}
           />
-          <button type="submit" className="send-btn" disabled={isLoading || !input.trim()}>
-            <Send size={24} />
+          <button className="send-btn" type="submit" disabled={!input.trim() || isLoading}>
+            <Send size={18} />
           </button>
         </form>
       </main>
 
-      {/* FOOTER: Credit and Branding */}
-      <footer style={{ textAlign: 'center', padding: '1rem', color: '#95a5a6', fontSize: '0.8rem' }}>
-        &copy; 2026 IncluDO Project - Preservare il futuro attraverso il passato.
-      </footer>
-
-      {/* MODAL SYSTEM: Custom Glassmorphism confirmation for session reset */}
-      <AnimatePresence>
-        {showResetModal && (
+      {showResetModal && (
+        <div className="modal-overlay">
           <Motion.div 
-            className="modal-overlay"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="modal-card"
           >
-            <Motion.div 
-              className="modal-card"
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-            >
-              <h3>Ricominciare da zero?</h3>
-              <p>Questa azione cancellerà lo storico attuale della conversazione e genererà una nuova sessione.</p>
-              <div className="modal-actions">
-                <button className="btn-cancel" onClick={() => setShowResetModal(false)}>Annulla</button>
-                <button className="btn-confirm" onClick={() => {
-                  localStorage.removeItem('includo_sid');
-                  window.location.reload();
-                }}>Conferma Reset</button>
-              </div>
-            </Motion.div>
+            <h3>Reset Chat</h3>
+            <p>Sei sicuro di voler ricominciare? Perderai la cronologia attuale.</p>
+            <div className="modal-actions">
+              <button className="btn-cancel" onClick={() => setShowResetModal(false)}>Annulla</button>
+              <button className="btn-confirm" onClick={resetChat}>Sì, resetta</button>
+            </div>
           </Motion.div>
-        )}
-      </AnimatePresence>
+        </div>
+      )}
     </div>
   );
 }
