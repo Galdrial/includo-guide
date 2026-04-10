@@ -1,8 +1,7 @@
 /* 
  * DESIGN SYSTEM & TOKENS
- * Using Outfit from Google Fonts. Terracotta and Navy palette for an artisan feel.
+ * Terracotta and Navy palette for an artisan feel.
  */
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
 
 :root {
   --primary: #E67E22; /* Warm Terracotta */
