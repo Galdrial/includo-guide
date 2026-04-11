@@ -21,14 +21,66 @@ IncluDO Guide is a production-ready orientation system designed to connect indiv
 
 ## 🛠️ Tech Stack
 
-- **Frontend**: React 18, Vite, Framer Motion, Vanilla CSS.
-- **Backend**: Node.js v22 (ESM), Express 5.
+- **Frontend**: React 19, Vite, Framer Motion, Vanilla CSS.
+- **Backend**: Node.js 20+ (ESM), Express 5.
 - **AI Engine**: OpenAI GPT-4o-mini & Text-Embedding-3-Small.
 - **Database**: Custom Vector Store & Persistent Session Storage.
 
 ---
 
 ## 📦 Maintenance & Operations
+
+### 🚀 Quick Bootstrap
+
+```bash
+# 1) Install dependencies
+cd server && npm install
+cd ../client && npm install
+
+# 2) Configure server environment
+cp ../server/.env.example ../server/.env
+
+# 3) Start backend (terminal A)
+cd ../server && npm start
+
+# 4) Start frontend (terminal B)
+cd ../client && npm run dev
+```
+
+### ⚙️ Environment Configuration (Server)
+
+Configure `server/.env` from `server/.env.example`.
+
+- `OPENAI_API_KEY`: OpenAI API key for chat + embeddings.
+- `ADMIN_INGEST_TOKEN`: shared secret required by `/api/admin/ingest` via header `x-admin-token`.
+- `SESSIONS_DIR`: filesystem directory used for anonymous session persistence.
+- `SESSION_TTL_MS`: max inactivity time before a session expires.
+- `SESSION_PRUNE_INTERVAL_MS`: background prune interval.
+- `MAX_SESSION_MESSAGES`: max messages retained per session window.
+- `INGEST_RATE_LIMIT_WINDOW_MS`: admin ingest rate-limit window.
+- `INGEST_RATE_LIMIT_MAX`: max ingest requests per window.
+
+### 🔌 API Contract (Essenziale)
+
+#### `POST /api/chat`
+
+- Body richiesto: `{ "message": "stringa non vuota", "sessionId"?: "string" }`
+- Se `message` è vuota o assente: risposta `400`.
+- Se `sessionId` manca, il server ne genera una anonima e la restituisce in risposta.
+- Risposta `200`:
+
+```json
+{
+  "reply": "...",
+  "history": [ ... ],
+  "sessionId": "sid_..."
+}
+```
+
+#### `POST /api/admin/ingest`
+
+- Richiede header: `x-admin-token: <ADMIN_INGEST_TOKEN>`
+- Protezioni attive: autenticazione token, validazione payload corsi, rate limiting.
 
 ### 🧪 Quality Assurance (QA)
 
@@ -48,7 +100,7 @@ cd ../client && npm test
 To synchronize the catalog (`courses.json`) with the vector store (`vector_db.json`), ensure the server is running and execute:
 
 ```bash
-cd server && node scripts/seed.js
+cd server && ADMIN_INGEST_TOKEN=your_secret node scripts/seed.js
 ```
 
 ### 🌐 Deployment

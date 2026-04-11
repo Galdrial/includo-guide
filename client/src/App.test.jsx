@@ -1,4 +1,5 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import axios from 'axios';
 import { describe, expect, it } from 'vitest';
 import App from './App';
 
@@ -56,6 +57,34 @@ describe( 'IncluDO Frontend Integration', () => {
     await renderApp();
     const input = screen.getByRole( 'textbox' );
     expect( input ).toBeInTheDocument();
+  } );
+
+  it( 'sends a message and renders assistant reply', async () => {
+    await renderApp();
+
+    axios.post.mockResolvedValueOnce( { data: { reply: 'Risposta orientamento test' } } );
+
+    const input = screen.getByRole( 'textbox' );
+    fireEvent.change( input, { target: { value: 'Vorrei un corso da remoto' } } );
+    fireEvent.click( screen.getByRole( 'button', { name: /Invia messaggio/i } ) );
+
+    await waitFor( () => {
+      expect( screen.getByText( 'Risposta orientamento test' ) ).toBeInTheDocument();
+    } );
+  } );
+
+  it( 'shows fallback error message when chat request fails', async () => {
+    await renderApp();
+
+    axios.post.mockRejectedValueOnce( new Error( 'network down' ) );
+
+    const input = screen.getByRole( 'textbox' );
+    fireEvent.change( input, { target: { value: 'Messaggio che fallisce' } } );
+    fireEvent.click( screen.getByRole( 'button', { name: /Invia messaggio/i } ) );
+
+    await waitFor( () => {
+      expect( screen.getByText( /Errore di connessione. Riprova!/i ) ).toBeInTheDocument();
+    } );
   } );
 
 } );

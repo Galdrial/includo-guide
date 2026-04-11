@@ -1,4 +1,5 @@
 import cors from 'cors';
+import crypto from 'crypto';
 import dotenv from 'dotenv';
 import express from 'express';
 import fs from 'fs';
@@ -15,13 +16,122 @@ app.use( express.json() );
 const __filename = fileURLToPath( import.meta.url );
 const __dirname = path.dirname( __filename );
 
-// Enterprise Memory: Session store with persistence
-const SESSIONS_PATH = path.join( __dirname, 'data/sessions.json' );
+const SESSION_TTL_MS = Number( process.env.SESSION_TTL_MS || 1000 * 60 * 60 * 24 * 30 );
+const SESSION_PRUNE_INTERVAL_MS = Number( process.env.SESSION_PRUNE_INTERVAL_MS || 1000 * 60 * 10 );
+const MAX_SESSION_MESSAGES = Number( process.env.MAX_SESSION_MESSAGES || 20 );
+const SESSIONS_DIR = process.env.SESSIONS_DIR || path.join( __dirname, 'data' );
+const SESSIONS_PATH = path.join( SESSIONS_DIR, 'sessions.json' );
+
+const INGEST_RATE_LIMIT_WINDOW_MS = Number( process.env.INGEST_RATE_LIMIT_WINDOW_MS || 1000 * 60 * 15 );
+const INGEST_RATE_LIMIT_MAX = Number( process.env.INGEST_RATE_LIMIT_MAX || 10 );
+const ingestRateMap = new Map();
+
+const isString = ( value ) => typeof value === 'string' && value.trim().length > 0;
+
+const normalizeSessions = ( raw ) => {
+    const normalized = {};
+    for ( const [sessionId, value] of Object.entries( raw || {} ) ) {
+        if ( Array.isArray( value ) ) {
+            normalized[sessionId] = { history: value, updatedAt: Date.now() };
+            continue;
+        }
+
+        if ( value && Array.isArray( value.history ) ) {
+            normalized[sessionId] = {
+                history: value.history,
+                updatedAt: Number( value.updatedAt ) || Date.now()
+            };
+        }
+    }
+    return normalized;
+};
+
+const pruneSessions = () => {
+    const now = Date.now();
+    for ( const [sessionId, entry] of Object.entries( sessions ) ) {
+        if ( !entry || !entry.updatedAt || ( now - entry.updatedAt ) > SESSION_TTL_MS ) {
+            delete sessions[sessionId];
+        }
+    }
+};
+
+const ensureSessionDir = () => {
+    if ( !fs.existsSync( SESSIONS_DIR ) ) {
+        fs.mkdirSync( SESSIONS_DIR, { recursive: true } );
+    }
+};
+
+const validateCourse = ( course ) => {
+    if ( !course || typeof course !== 'object' ) return false;
+
+    const requiredStringFields = ['id', 'title', 'area', 'duration', 'level', 'objective', 'description'];
+    const hasStrings = requiredStringFields.every( ( field ) => isString( course[field] ) );
+    const hasValidRemote = typeof course.remote === 'boolean';
+    const hasValidWeeklyHours = Number.isFinite( course.weekly_hours ) && course.weekly_hours > 0;
+    const hasValidSkills = Array.isArray( course.skills ) && course.skills.length > 0 && course.skills.every( isString );
+
+    return hasStrings && hasValidRemote && hasValidWeeklyHours && hasValidSkills;
+};
+
+const validateCoursesPayload = ( courses ) => {
+    if ( !Array.isArray( courses ) || courses.length === 0 ) {
+        return { valid: false, error: 'Input must be a non-empty course array' };
+    }
+
+    const invalidIndex = courses.findIndex( ( course ) => !validateCourse( course ) );
+    if ( invalidIndex !== -1 ) {
+        return { valid: false, error: `Invalid course payload at index ${invalidIndex}` };
+    }
+
+    return { valid: true };
+};
+
+const adminIngestAuth = ( req, res, next ) => {
+    const expectedToken = process.env.ADMIN_INGEST_TOKEN;
+    if ( !isString( expectedToken ) ) {
+        return res.status( 503 ).json( { error: 'Admin ingest token not configured' } );
+    }
+
+    const receivedToken = req.get( 'x-admin-token' );
+    if ( !isString( receivedToken ) ) {
+        return res.status( 401 ).json( { error: 'Missing admin token' } );
+    }
+
+    const expectedBuffer = Buffer.from( expectedToken, 'utf8' );
+    const receivedBuffer = Buffer.from( receivedToken, 'utf8' );
+
+    if ( expectedBuffer.length !== receivedBuffer.length || !crypto.timingSafeEqual( expectedBuffer, receivedBuffer ) ) {
+        return res.status( 403 ).json( { error: 'Invalid admin token' } );
+    }
+
+    return next();
+};
+
+const ingestRateLimit = ( req, res, next ) => {
+    const now = Date.now();
+    const key = req.ip || req.headers['x-forwarded-for'] || 'unknown';
+    const rateEntry = ingestRateMap.get( key );
+
+    if ( !rateEntry || now > rateEntry.resetAt ) {
+        ingestRateMap.set( key, { count: 1, resetAt: now + INGEST_RATE_LIMIT_WINDOW_MS } );
+        return next();
+    }
+
+    if ( rateEntry.count >= INGEST_RATE_LIMIT_MAX ) {
+        return res.status( 429 ).json( { error: 'Too many ingest requests. Try again later.' } );
+    }
+
+    rateEntry.count += 1;
+    ingestRateMap.set( key, rateEntry );
+    return next();
+};
 
 let sessions = {};
 try {
+    ensureSessionDir();
     if ( fs.existsSync( SESSIONS_PATH ) ) {
-        sessions = JSON.parse( fs.readFileSync( SESSIONS_PATH, 'utf8' ) );
+        const raw = JSON.parse( fs.readFileSync( SESSIONS_PATH, 'utf8' ) );
+        sessions = normalizeSessions( raw );
     }
 } catch ( err ) {
     console.error( "Failed to load sessions:", err );
@@ -29,11 +139,37 @@ try {
 
 const saveSessions = () => {
     try {
-        fs.writeFileSync( SESSIONS_PATH, JSON.stringify( sessions, null, 2 ) );
+        ensureSessionDir();
+        pruneSessions();
+        const tempPath = `${SESSIONS_PATH}.tmp`;
+        fs.writeFileSync( tempPath, JSON.stringify( sessions, null, 2 ) );
+        fs.renameSync( tempPath, SESSIONS_PATH );
     } catch ( err ) {
         console.error( "Failed to save sessions:", err );
     }
 };
+
+const getSessionHistory = ( sessionId ) => {
+    const session = sessions[sessionId];
+    if ( !session || !Array.isArray( session.history ) ) {
+        return [{ role: 'system', content: buildSystemPrompt() }];
+    }
+    session.updatedAt = Date.now();
+    return session.history;
+};
+
+const setSessionHistory = ( sessionId, history ) => {
+    sessions[sessionId] = {
+        history,
+        updatedAt: Date.now()
+    };
+};
+
+const pruneTimer = setInterval( () => {
+    pruneSessions();
+    saveSessions();
+}, SESSION_PRUNE_INTERVAL_MS );
+pruneTimer.unref();
 
 // --- PROMPT FACTORY: Modular approach suggested by info.txt (line 555) ---
 
@@ -87,14 +223,14 @@ RISPONDI SEMPRE IN ITALIANO. NON USARE ALTRI FORMATI PER LA TABELLA.
 `;
 
 // Health Check for Uptime Monitoring
-app.get('/api/health', (req, res) => {
-    res.json({ status: "ok", uptime: process.uptime() });
-});
+app.get( '/api/health', ( req, res ) => {
+    res.json( { status: "ok", uptime: process.uptime() } );
+} );
 
 // --- API ENDPOINTS ---
 
 app.get( '/api/history/:sessionId', ( req, res ) => {
-    const history = sessions[req.params.sessionId] || [{ role: "system", content: buildSystemPrompt() }];
+    const history = getSessionHistory( req.params.sessionId );
     // Filter out ANY technical message: system, tool, tool_calls, or internal synthesis prompts
     const cleanHistory = history.filter( m => {
         const isUserOrAssistant = ( m.role === 'user' || m.role === 'assistant' );
@@ -114,10 +250,11 @@ app.post( '/api/reset', ( req, res ) => {
 } );
 
 // Admin Ingest: Sync courses and generate vectors
-app.post( '/api/admin/ingest', async ( req, res ) => {
+app.post( '/api/admin/ingest', ingestRateLimit, adminIngestAuth, async ( req, res ) => {
     try {
         const courses = req.body;
-        if ( !Array.isArray( courses ) ) return res.status( 400 ).json( { error: "Input must be a course array" } );
+        const validation = validateCoursesPayload( courses );
+        if ( !validation.valid ) return res.status( 400 ).json( { error: validation.error } );
 
         console.log( `🛠️ Syncing ${courses.length} courses...` );
         const vectors = [];
@@ -144,13 +281,17 @@ app.post( '/api/admin/ingest', async ( req, res ) => {
 } );
 
 app.post( '/api/chat', async ( req, res ) => {
-    const { message, sessionId } = req.body;
+    const { message, sessionId } = req.body || {};
 
-    if ( !sessions[sessionId] ) {
-        sessions[sessionId] = [{ role: "system", content: buildSystemPrompt() }];
+    if ( !isString( message ) ) {
+        return res.status( 400 ).json( { error: 'Invalid chat payload: message is required' } );
     }
 
-    let history = sessions[sessionId];
+    const effectiveSessionId = isString( sessionId )
+        ? sessionId
+        : `sid_${crypto.randomUUID()}`;
+
+    let history = getSessionHistory( effectiveSessionId );
     history.push( { role: "user", content: message } );
 
     try {
@@ -195,9 +336,9 @@ app.post( '/api/chat', async ( req, res ) => {
                 ...history,
                 aiMessage,
                 { role: "tool", tool_call_id: toolCall.id, content: JSON.stringify( matches ) },
-                { 
-                  role: "system", 
-                  content: "ESPERTO ORIENTATORE: Sintetizza i risultati. CONSIGLIA SOLO I 2 CORSI MIGLIORI. USA OBBLIGATORIAMENTE UNA TABELLA MARKDOWN CON LE BARRE '|'. Nelle colonne 'Ore' inserisci sempre le ore SETTIMANALI (weekly_hours), non quelle totali. ESEMPIO: | Titolo | Ore/sett | Match | \n | :--- | :--- | :--- | \n | Nome | 6h | 80% |. Sii sintetico e non ripetere saluti." 
+                {
+                    role: "system",
+                    content: "ESPERTO ORIENTATORE: Sintetizza i risultati. CONSIGLIA SOLO I 2 CORSI MIGLIORI. USA OBBLIGATORIAMENTE UNA TABELLA MARKDOWN CON LE BARRE '|'. Nelle colonne 'Ore' inserisci sempre le ore SETTIMANALI (weekly_hours), non quelle totali. ESEMPIO: | Titolo | Ore/sett | Match | \n | :--- | :--- | :--- | \n | Nome | 6h | 80% |. Sii sintetico e non ripetere saluti."
                 },
                 { role: "user", content: buildResultsPrompt( args.user_profile, matches ) }
             ];
@@ -213,11 +354,11 @@ app.post( '/api/chat', async ( req, res ) => {
         }
 
         // Memory management: Dynamic sliding window to keep context efficient
-        if ( history.length > 20 ) history = [history[0], ...history.slice( -18 )];
-        sessions[sessionId] = history;
+        if ( history.length > MAX_SESSION_MESSAGES ) history = [history[0], ...history.slice( -( MAX_SESSION_MESSAGES - 1 ) )];
+        setSessionHistory( effectiveSessionId, history );
         saveSessions();
 
-        res.json( { reply: aiMessage.content, history } );
+        res.json( { reply: aiMessage.content, history, sessionId: effectiveSessionId } );
     } catch ( error ) {
         console.error( "Enterprise Server Error:", error );
         res.status( 500 ).json( { error: "Errore interno al server." } );
