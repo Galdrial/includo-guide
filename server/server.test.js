@@ -25,6 +25,7 @@ vi.mock( 'openai', () => {
 describe( 'API Endpoints (Integration)', () => {
 
   process.env.ADMIN_INGEST_TOKEN = 'test-admin-token';
+  process.env.SKIP_COURSES_WRITE = '1';
 
   it( 'GET /api/history/:sessionId should return status 200 and history array', async () => {
     const res = await request( app ).get( '/api/history/test_session_123' );

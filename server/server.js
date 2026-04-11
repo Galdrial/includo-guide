@@ -269,8 +269,11 @@ app.post( '/api/admin/ingest', ingestRateLimit, adminIngestAuth, async ( req, re
         const COURSES_PATH = path.join( __dirname, 'data/courses.json' );
         const VECTOR_PATH = path.join( __dirname, 'data/vector_db.json' );
 
-        fs.writeFileSync( COURSES_PATH, JSON.stringify( courses, null, 2 ) );
-        fs.writeFileSync( VECTOR_PATH, JSON.stringify( vectors, null, 2 ) );
+        // Only write to real files if not in test mode
+        if ( process.env.SKIP_COURSES_WRITE !== '1' ) {
+            fs.writeFileSync( COURSES_PATH, JSON.stringify( courses, null, 2 ) );
+            fs.writeFileSync( VECTOR_PATH, JSON.stringify( vectors, null, 2 ) );
+        }
 
         console.log( "✅ Sync complete." );
         res.json( { success: true, count: courses.length } );
