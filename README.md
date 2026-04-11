@@ -1,6 +1,6 @@
 # IncluDO Guide - Intelligent Artisan Orientation
 
-[![Live](https://img.shields.io/badge/Live-Demo-brightgreen?style=for-the-badge&logo=vercel)]
+![Live](https://img.shields.io/badge/Live-Demo-brightgreen?style=for-the-badge&logo=vercel)
 
 ### Full-Stack RAG-Powered Vocational Platform
 
