@@ -1,5 +1,8 @@
 # IncluDO Guide - Intelligent Artisan Orientation
 
+[![Live Demo](https://img.shields.io/badge/Live-Demo-brightgreen?style=for-the-badge&logo=vercel)](https://includo-guide.vercel.app)
+[![API Status](https://img.shields.io/badge/API-Live-blue?style=for-the-badge&logo=render)](https://includo-guide.onrender.com/api/health)
+
 ### Full-Stack RAG-Powered Vocational Platform
 
 IncluDO Guide is a production-ready orientation system designed to connect individuals with traditional artisan training. Using a **Modular Prompt Factory** and **Vector RAG**, the platform provides guided discovery across Woodworking, Textiles, Ceramics, Leather, and Nature disciplines.
