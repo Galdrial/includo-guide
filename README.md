@@ -12,6 +12,7 @@ IncluDO Guide is a production-ready orientation system designed to connect indiv
 - **Persistent Memory**: Session-based history stored in `sessions.json` for server-side persistence across restarts.
 - **Pedagogical Constraints**: Guaranteed "Max 2" course recommendations enforced by dual-layer prompt synthesize.
 - **Inclusive UI**: High-fidelity Glassmorphism interface with full ARIA accessibility and WCAG-friendly contrast.
+- **Deployment Optimized**: Configurato per Vercel + Render con supporto nativo a **Uptime Robot** (endpoint `/api/health`) per eliminare i tempi di cold-start. ✅
 - **Security Hardened**:
   - ESM (ES Modules) throughout the stack.
   - SSRF protection (Axios v1.15.0+).

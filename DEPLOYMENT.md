@@ -100,11 +100,11 @@ Apri `https://includo-guide.vercel.app` e testa la chat.
 - **Sessioni non sincronizzate**: se deployate 2+ instance backend, ogni istanza ha una copia locale di `sessions.json`.
 - **Soluzione**: Render offre replica DB; per produzione usare PostgreSQL o Redis per sessions.
 
-### Render Free Tier
+### Render Free Tier & Zero-Downtime Strategy
 
-- Spins down dopo 15 min di inattività.
-- Cold start ~30 sec al primo request.
-- Per produzione: upgrade a Paid tier.
+- **Default Behavior**: Spins down dopo 15 min di inattività.
+- **Soluzione Ottimizzata**: Il progetto include un endpoint `/api/health` dedicato.
+- **Configurazione Uptime Monitoring**: Utilizzare un servizio come **Uptime Robot** o **Cron-job.org** per inviare una richiesta GET ogni 5-10 minuti. Questo mantiene il server "sveglio" h24, eliminando i cold start e garantendo risposte istantanee alla prima interazione dell'utente. ✅
 
 ### Omissioni intenzionali per MVP
 
