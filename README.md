@@ -1,7 +1,7 @@
 # IncluDO Guide - Intelligent Artisan Orientation
 
 [![Live Demo](https://img.shields.io/badge/Live-Demo-brightgreen?style=for-the-badge&logo=vercel)](https://includo-guide.vercel.app)
-[![API Status](https://img.shields.io/badge/API-Live-blue?style=for-the-badge&logo=render)](https://includo-guide.onrender.com/api/health)
+[![API Status](https://img.shields.io/badge/API-Self--Hosted-blue?style=for-the-badge&logo=digitalocean)](DEPLOYMENT.md)
 
 ### Full-Stack RAG-Powered Vocational Platform
 
@@ -15,7 +15,7 @@ IncluDO Guide is a production-ready orientation system designed to connect indiv
 - **Persistent Memory**: Session-based history stored in `sessions.json` for server-side persistence across restarts.
 - **Pedagogical Constraints**: Guaranteed "Max 2" course recommendations enforced by dual-layer prompt synthesize.
 - **Inclusive UI**: High-fidelity Glassmorphism interface with full ARIA accessibility and WCAG-friendly contrast.
-- **Deployment Optimized**: Configurato per Vercel + Render con supporto nativo a **Uptime Robot** (endpoint `/api/health`) per eliminare i tempi di cold-start. ✅
+- **Deployment Optimized**: Configurato per frontend statico su Vercel e backend self-hosted via Coolify su DigitalOcean, con endpoint `/api/health` pronto per monitoraggio esterno. ✅
 - **Security Hardened**:
   - ESM (ES Modules) throughout the stack.
   - SSRF protection (Axios v1.15.0+).
@@ -110,7 +110,7 @@ cd server && ADMIN_INGEST_TOKEN=your_secret node scripts/seed.js
 ### 🌐 Deployment
 
 - **Frontend**: Designed for Vercel.
-- **Backend**: Designed for Render (Persistent Disk required for `sessions.json` stability).
+- **Backend**: Designed for Docker-based deployment via Coolify on DigitalOcean (persistent storage recommended for `sessions.json` stability).
 
 ---
 
