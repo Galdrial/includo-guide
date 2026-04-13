@@ -1,0 +1,8 @@
+# IncluDO Guide - Robots.txt
+# Standard indexing rules for the vocational orientation project
+
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://includo.guide/sitemap.xml

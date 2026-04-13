@@ -1,8 +1,9 @@
 /**
- * PRODUCTION SEEDING SCRIPT (ESM version)
- * Run this to ingest course data into your LIVE Render server.
+ * PRODUCTION SEEDING SCRIPT
+ * Run this script to ingest course data into the LIVE production server.
  * Usage: node scripts/seed_production.js
  */
+
 import axios from 'axios';
 import fs from 'fs';
 import path from 'path';
@@ -10,23 +11,36 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath( import.meta.url );
 const __dirname = path.dirname( __filename );
+
+/** 
+ * Administrative token for production authentication.
+ * Must match the ADMIN_INGEST_TOKEN set in Render environment variables.
+ */
 const ADMIN_INGEST_TOKEN = process.env.ADMIN_INGEST_TOKEN || process.env.INGEST_TOKEN;
 
-// 1. REPLACE THIS URL with your actual Render backend URL
-const RENDER_URL = 'https://includo-guide.onrender.com/api/admin/ingest';
+/** 
+ * TARGET PRODUCTION URL.
+ * Replace this with your actual Render backend URL before running.
+ */
+const RENDER_URL = process.env.RENDER_URL || 'https://includo-guide.onrender.com/api/admin/ingest';
 
-// Load source catalog
+// Load source catalog from local database
 const COURSES_PATH = path.join( __dirname, '../data/courses.json' );
 const COURSES_DATA = JSON.parse( fs.readFileSync( COURSES_PATH, 'utf8' ) );
 
+/**
+ * Executes a remote POST request to the production server to sync courses and vectors.
+ */
 const seedProduction = async () => {
   try {
     console.log( "🌍 Connecting to Production Server..." );
     console.log( `🚀 Starting remote ingestion of ${COURSES_DATA.length} courses...` );
+    
     if ( !ADMIN_INGEST_TOKEN ) {
-      console.warn( "⚠️ ADMIN_INGEST_TOKEN non impostato: la chiamata può fallire se il server richiede autenticazione admin." );
+      console.warn( "⚠️ ADMIN_INGEST_TOKEN not set: Request may fail due to authentication requirements." );
     }
 
+    // Remote POST request using the x-admin-token header for security
     const response = await axios.post(
       RENDER_URL,
       COURSES_DATA,
@@ -45,8 +59,9 @@ const seedProduction = async () => {
     } else {
       console.error( "Error:", error.message );
     }
-    console.log( "\nTIP: Make sure your Render URL is correct and the server is 'Live' (not sleeping)." );
+    console.log( "\nTIP: Verify your RENDER_URL and ensure the production server is 'Live' (not in sleep mode)." );
   }
 };
 
+// Start the production seeding process
 seedProduction();

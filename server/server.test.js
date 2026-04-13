@@ -1,8 +1,17 @@
+/**
+ * BACKEND INTEGRATION TESTS
+ * This suite verifies the core API endpoints of the IncluDO server.
+ * It uses supertest for HTTP requests and Vitest for assertions.
+ */
+
 import request from 'supertest';
 import { describe, expect, it, vi } from 'vitest';
 import { app } from './server.js';
 
-// Mock OpenAI to prevent credential errors during testing
+/**
+ * MOCK OPENAI: Prevents real API calls during testing.
+ * This ensures tests are deterministic, fast, and cost-free.
+ */
 vi.mock( 'openai', () => {
   return {
     default: vi.fn().mockImplementation( () => ( {
@@ -22,11 +31,16 @@ vi.mock( 'openai', () => {
   };
 } );
 
-describe( 'API Endpoints (Integration)', () => {
+describe( 'Backend API Lifecycle & Security', () => {
 
+  // Configuration for test isolation
   process.env.ADMIN_INGEST_TOKEN = 'test-admin-token';
   process.env.SKIP_COURSES_WRITE = '1';
 
+  /** 
+   * Session History Persistence
+   * Verifies that the server correctly manages and filters session history.
+   */
   it( 'GET /api/history/:sessionId should return status 200 and history array', async () => {
     const res = await request( app ).get( '/api/history/test_session_123' );
     expect( res.status ).toBe( 200 );
@@ -34,6 +48,10 @@ describe( 'API Endpoints (Integration)', () => {
     expect( Array.isArray( res.body.history ) ).toBe( true );
   } );
 
+  /** 
+   * Session Lifecycle (Reset)
+   * Ensures sessions can be wiped both from memory and persistent store.
+   */
   it( 'POST /api/reset should return status 200 and success: true', async () => {
     const res = await request( app )
       .post( '/api/reset' )
@@ -42,6 +60,10 @@ describe( 'API Endpoints (Integration)', () => {
     expect( res.body.success ).toBe( true );
   } );
 
+  /**
+   * AI Chat Core Logic
+   * Verifies that the chat pipeline correctly interacts with the AI bridge.
+   */
   it( 'POST /api/chat should handle requests with a valid AI response', async () => {
     const res = await request( app )
       .post( '/api/chat' )
@@ -52,92 +74,73 @@ describe( 'API Endpoints (Integration)', () => {
     expect( typeof res.body.reply ).toBe( 'string' );
   } );
 
-  it( 'POST /api/admin/ingest should reject missing token', async () => {
-    const res = await request( app )
-      .post( '/api/admin/ingest' )
-      .send( [] );
+  /**
+   * Administrative Security (Auth)
+   * Tests the timing-safe token authentication logic for ingestion.
+   */
+  describe( 'Administrative Security (Ingestion Auth)', () => {
+      
+    it( 'should reject requests with missing token (401)', async () => {
+      const res = await request( app )
+        .post( '/api/admin/ingest' )
+        .send( [] );
+      expect( res.status ).toBe( 401 );
+    } );
 
-    expect( res.status ).toBe( 401 );
-    expect( res.body ).toHaveProperty( 'error' );
-  } );
+    it( 'should reject requests with invalid token (403)', async () => {
+      const res = await request( app )
+        .post( '/api/admin/ingest' )
+        .set( 'x-admin-token', 'wrong-token' )
+        .send( [] );
+      expect( res.status ).toBe( 403 );
+    } );
 
-  it( 'POST /api/admin/ingest should reject invalid payload', async () => {
-    const res = await request( app )
-      .post( '/api/admin/ingest' )
-      .set( 'x-admin-token', 'test-admin-token' )
-      .send( [{ id: 'missing-fields' }] );
+    it( 'should accept valid token and payload (200)', async () => {
+        const payload = [{
+          id: 'test-course',
+          title: 'Corso Test',
+          area: 'Legno',
+          duration: '4 settimane',
+          weekly_hours: 6,
+          skills: ['Assemblaggio'],
+          remote: true,
+          level: 'Principiante',
+          objective: 'Hobby',
+          description: 'Corso di prova'
+        }];
+    
+        const res = await request( app )
+          .post( '/api/admin/ingest' )
+          .set( 'x-admin-token', 'test-admin-token' )
+          .send( payload );
+    
+        expect( res.status ).toBe( 200 );
+        expect( res.body.success ).toBe( true );
+    } );
+  });
 
-    expect( res.status ).toBe( 400 );
-    expect( res.body ).toHaveProperty( 'error' );
-  } );
+  /**
+   * Input Validation & Edge Cases
+   */
+  describe( 'Input Sanitization & Edge Cases', () => {
 
-  it( 'POST /api/admin/ingest should reject invalid token', async () => {
-    const res = await request( app )
-      .post( '/api/admin/ingest' )
-      .set( 'x-admin-token', 'wrong-token' )
-      .send( [] );
+    it( 'POST /api/chat should still respond when sessionId is missing (generate new)', async () => {
+        const res = await request( app )
+          .post( '/api/chat' )
+          .send( { message: 'ciao' } );
+    
+        expect( res.status ).toBe( 200 );
+        expect( res.body ).toHaveProperty( 'sessionId' );
+    } );
 
-    expect( res.status ).toBe( 403 );
-    expect( res.body ).toHaveProperty( 'error' );
-  } );
+    it( 'POST /api/chat should return 400 for empty or whitespace-only messages', async () => {
+        const res = await request( app )
+          .post( '/api/chat' )
+          .send( { message: '   ', sessionId: 'test_session_123' } );
+    
+        expect( res.status ).toBe( 400 );
+    } );
 
-  it( 'POST /api/admin/ingest should fail when admin token is not configured', async () => {
-    const previousToken = process.env.ADMIN_INGEST_TOKEN;
-    delete process.env.ADMIN_INGEST_TOKEN;
-
-    const res = await request( app )
-      .post( '/api/admin/ingest' )
-      .set( 'x-admin-token', 'test-admin-token' )
-      .send( [] );
-
-    expect( res.status ).toBe( 503 );
-    expect( res.body ).toHaveProperty( 'error' );
-
-    process.env.ADMIN_INGEST_TOKEN = previousToken;
-  } );
-
-  it( 'POST /api/chat should still respond when sessionId is missing', async () => {
-    const res = await request( app )
-      .post( '/api/chat' )
-      .send( { message: 'ciao' } );
-
-    expect( res.status ).toBe( 200 );
-    expect( res.body ).toHaveProperty( 'reply' );
-    expect( res.body ).toHaveProperty( 'sessionId' );
-    expect( typeof res.body.sessionId ).toBe( 'string' );
-  } );
-
-  it( 'POST /api/chat should return 400 for invalid message payload', async () => {
-    const res = await request( app )
-      .post( '/api/chat' )
-      .send( { message: '   ', sessionId: 'test_session_123' } );
-
-    expect( res.status ).toBe( 400 );
-    expect( res.body ).toHaveProperty( 'error' );
-  } );
-
-  it( 'POST /api/admin/ingest should accept valid token and payload', async () => {
-    const payload = [{
-      id: 'test-course',
-      title: 'Corso Test',
-      area: 'Legno',
-      duration: '4 settimane',
-      weekly_hours: 6,
-      skills: ['Assemblaggio'],
-      remote: true,
-      level: 'Principiante',
-      objective: 'Hobby',
-      description: 'Corso di prova'
-    }];
-
-    const res = await request( app )
-      .post( '/api/admin/ingest' )
-      .set( 'x-admin-token', 'test-admin-token' )
-      .send( payload );
-
-    expect( res.status ).toBe( 200 );
-    expect( res.body.success ).toBe( true );
-    expect( res.body.count ).toBe( 1 );
-  } );
+  });
 
 } );

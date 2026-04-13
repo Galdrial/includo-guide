@@ -1,8 +1,9 @@
 /**
- * ADMIN SEEDING SCRIPT (ESM version)
- * This script automates the process of ingesting course data into the vector database.
- * Requirement: The backend server must be running on port 3001.
+ * DATABASE SEEDING SCRIPT (Local Development)
+ * Automates the synchronization of the local course catalog with the vector database.
+ * Requirement: The backend server must be running on localhost:3001.
  */
+
 import axios from 'axios';
 import fs from 'fs';
 import path from 'path';
@@ -10,21 +11,31 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath( import.meta.url );
 const __dirname = path.dirname( __filename );
+
+/** 
+ * Administrative token for authorization. 
+ * Expected by the /api/admin/ingest endpoint.
+ */
 const ADMIN_INGEST_TOKEN = process.env.ADMIN_INGEST_TOKEN || process.env.INGEST_TOKEN;
 
-// Load the source catalog from the JSON file
+// Load the source catalog from the local data folder
 const COURSES_PATH = path.join( __dirname, '../data/courses.json' );
 const COURSES_DATA = JSON.parse( fs.readFileSync( COURSES_PATH, 'utf8' ) );
 
+/**
+ * Executes the ingestion request to the local server.
+ * Triggers embedding generation and vector storage update.
+ */
 const seed = async () => {
   try {
     console.log( "🚀 Starting course ingestion & vectorization process..." );
     console.log( `📦 Sending ${COURSES_DATA.length} courses to the server...` );
+
     if ( !ADMIN_INGEST_TOKEN ) {
-      console.warn( "⚠️ ADMIN_INGEST_TOKEN non impostato: la chiamata può fallire se il server richiede autenticazione admin." );
+      console.warn( "⚠️ ADMIN_INGEST_TOKEN not set: the request may fail if the server enforces admin authentication." );
     }
 
-    // Send the catalog to the ingestion endpoint to generate vectors
+    // Direct POST request to the local administrative endpoint
     const response = await axios.post(
       'http://localhost:3001/api/admin/ingest',
       COURSES_DATA,
@@ -46,4 +57,5 @@ const seed = async () => {
   }
 };
 
+// Start the seeding process
 seed();

@@ -5,14 +5,37 @@ import { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
+/** 
+ * Backend API base URL. 
+ * Defaults to localhost:3001 if the VITE_API_BASE environment variable is not set.
+ */
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3001/api';
 
+/**
+ * MAIN COMPONENT: IncluDO Chatbot Interface
+ * Handles state management for conversation history, session persistence, 
+ * and communication with the orientation AI.
+ */
 function App() {
+  // --- STATE MANAGEMENT ---
+  
+  /** Current conversation messages array. */
   const [messages, setMessages] = useState( [] );
+  
+  /** Current text input value from the user. */
   const [input, setInput] = useState( '' );
+  
+  /** Loading state for AI response simulation. */
   const [isLoading, setIsLoading] = useState( false );
+  
+  /** Controls the visibility of the reset confirmation modal. */
   const [showResetModal, setShowResetModal] = useState( false );
 
+  /** 
+   * Unified Session ID. 
+   * Retrieves an existing ID from localStorage or generates a new one.
+   * This ensures the chat history persists even if the browser is refreshed.
+   */
   const [sessionId] = useState( () => {
     const saved = localStorage.getItem( 'includo_sid' );
     if ( saved ) return saved;
@@ -23,21 +46,35 @@ function App() {
     return newId;
   } );
 
+  /** References for auto-scrolling and input focus management. */
   const scrollRef = useRef( null );
   const inputRef = useRef( null );
 
+  // --- SIDE EFFECTS (Hooks) ---
+
+  /** 
+   * Auto-scroll: Triggered whenever messages change or loading state toggles.
+   * Keeps the latest message visible in the viewport.
+   */
   useEffect( () => {
     if ( scrollRef.current ) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, isLoading] );
 
+  /** 
+   * Auto-focus: Ensures the input field is focused after an AI response is received.
+   */
   useEffect( () => {
     if ( !isLoading && inputRef.current ) {
       inputRef.current.focus();
     }
   }, [isLoading] );
 
+  /** 
+   * Initialization: Fetches the chat history for the current sessionId from the server.
+   * If no history exists, pushes a default assistant welcome message.
+   */
   useEffect( () => {
     const fetchHistory = async () => {
       try {
@@ -57,6 +94,12 @@ function App() {
     fetchHistory();
   }, [sessionId] );
 
+  // --- EVENT HANDLERS ---
+
+  /** 
+   * Resets the current chat session both locally and on the server.
+   * Clears the UI history and requests a session deletion via API.
+   */
   const resetChat = async () => {
     try {
       await axios.post( `${API_BASE}/reset`, { sessionId } );
@@ -70,6 +113,10 @@ function App() {
     }
   };
 
+  /** 
+   * Sends a user message to the backend and handles the AI synthesis response.
+   * @param {Event} e - Submit event.
+   */
   const sendMessage = async ( e ) => {
     e.preventDefault();
     if ( !input.trim() || isLoading ) return;
@@ -144,6 +191,7 @@ function App() {
           ) }
         </div>
 
+        {/* --- INPUT AREA --- */}
         <form className="input-area" onSubmit={ sendMessage } role="search">
           <input
             ref={ inputRef }
@@ -153,7 +201,7 @@ function App() {
             value={ input }
             onChange={ ( e ) => setInput( e.target.value ) }
             disabled={ isLoading }
-            aria-label="Campo di inserimento messaggio"
+            aria-label="Digita il tuo messaggio"
           />
           <button
             className="send-btn"
@@ -166,34 +214,45 @@ function App() {
         </form>
       </main>
 
-      { showResetModal && (
-        <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      {/* --- RESET CONFIRMATION MODAL --- */}
+      <AnimatePresence>
+        { showResetModal && (
           <Motion.div
-            initial={ { scale: 0.9, opacity: 0 } }
-            animate={ { scale: 1, opacity: 1 } }
-            className="modal-card"
+            className="modal-overlay"
+            initial={ { opacity: 0 } }
+            animate={ { opacity: 1 } }
+            exit={ { opacity: 0 } }
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="modal-title"
+            aria-describedby="modal-description"
           >
-            <h3 id="modal-title">Reset Chat</h3>
-            <p>Sei sicuro di voler ricominciare? Perderai la cronologia attuale.</p>
-            <div className="modal-actions">
-              <button
-                className="btn-cancel"
-                onClick={ () => setShowResetModal( false ) }
-                aria-label="Annulla reset"
-              >
-                Annulla
-              </button>
-              <button
-                className="btn-confirm"
-                onClick={ resetChat }
-                aria-label="Conferma reset della chat"
-              >
-                Sì, resetta
-              </button>
-            </div>
+            <Motion.div
+              className="modal-content"
+              initial={ { scale: 0.9, opacity: 0 } }
+              animate={ { scale: 1, opacity: 1 } }
+              exit={ { scale: 0.9, opacity: 0 } }
+            >
+              <h2 id="modal-title">Nuova Conversazione</h2>
+              <p id="modal-description">Stai per azzerare la chat. Tutte le tue preferenze salvate verranno eliminate. Vuoi continuare?</p>
+              <div className="modal-actions">
+                <button
+                  className="cancel-btn"
+                  onClick={ () => setShowResetModal( false ) }
+                >
+                  Indietro
+                </button>
+                <button
+                  className="confirm-btn"
+                  onClick={ resetChat }
+                >
+                  Conferma Reset
+                </button>
+              </div>
+            </Motion.div>
           </Motion.div>
-        </div>
-      ) }
+        ) }
+      </AnimatePresence>
     </div>
   );
 }

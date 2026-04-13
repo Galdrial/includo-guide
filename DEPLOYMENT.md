@@ -1,144 +1,105 @@
-# Deployment Guide - IncluDO Guide
+# IncluDO Guide - Deployment & Operations Manual
+### Enterprise-Grade Vocational Orientation Platform
 
-## Backend (Node.js + Express) → Render
+This guide provides comprehensive instructions for deploying and maintaining the IncluDO project in a production environment. The architecture is designed for a **distributed cloud setup** (Frontend on Vercel, Backend on Render) with a persistent RAG (Retrieval-Augmented Generation) infrastructure.
 
-### 1. Preparazione repository
+---
+
+## 🏗️ Cloud Infrastructure Overview
+
+- **Frontend**: React (Vite) deployed on **Vercel**.
+- **Backend**: Node.js v22 (ESM) deployed on **Render**.
+- **AI Engine**: OpenAI GPT-4o-mini & Text-Embedding-3-Small.
+- **Monitoring**: Uptime Robot (via `/api/health` endpoint).
+
+---
+
+## 🟢 Backend Deployment (Render)
+
+### 1. Preparation
+Connect your GitHub repository to [Render.com](https://render.com) and create a new **Web Service**.
+
+- **Environment**: Node.js
+- **Branch**: `main`
+- **Root Directory**: `server`
+- **Build Command**: `npm install`
+- **Start Command**: `npm start`
+
+### 2. Required Environment Variables
+Configure these in the Render Dashboard (Environment section):
+
+| Variable | Description |
+| --- | --- |
+| `OPENAI_API_KEY` | Your OpenAI API key (required for RAG and Chat). |
+| `ADMIN_INGEST_TOKEN` | A secret string used to authorize data synchronization. |
+| `PORT` | Set to `3001` (default). |
+| `NODE_ENV` | Set to `production`. |
+
+### 3. Persistent Disk (Recommended)
+By default, the `sessions.json` file is ephemeral and will be reset on every server restart. For true production persistence, mount a **Persistent Disk** to `/var/data` and configure the path in your environment.
+
+---
+
+## 🔵 Frontend Deployment (Vercel)
+
+### 1. Project Setup
+Import your repository into [Vercel](https://vercel.com).
+
+- **Framework Preset**: Vite
+- **Root Directory**: `client`
+- **Build Command**: `npm run build`
+- **Output Directory**: `dist`
+
+### 2. Environment Variables
+- **VITE_API_BASE**: The URL of your Render backend (e.g., `https://includo-guide.onrender.com/api`).
+
+---
+
+## 🔄 Data Synchronization (RAG Ingestion)
+
+Once the backend is live, you must synchronize the local course catalog with the production vector database.
+
+1. Ensure the `ADMIN_INGEST_TOKEN` is set on your Render server.
+2. From your local development machine, run:
 
 ```bash
-git add .
-git commit -m "Ready for deployment"
-git push origin main
+# Set the token and production URL
+EXPORT ADMIN_INGEST_TOKEN=your_secret_token
+EXPORT RENDER_URL=https://your-app.onrender.com/api/admin/ingest
+
+# Run the ingestion script
+node server/scripts/seed_production.js
 ```
 
-### 2. Creare servizio su Render
+---
 
-- Vai su [render.com](https://render.com) e crea un nuovo **Web Service**.
-- Connetti il repo GitHub.
-- Scegli branch `main`.
+## 🛡️ Uptime & Monitoring Strategy (Zero Cold Start)
 
-### 3. Configurare Environment Variables su Render
+Since Render's free tier puts the server to sleep after 15 minutes of inactivity, we use a proactive ping strategy.
 
-Nella dashboard Render, sezione **Environment**, aggiungi:
+1. **Health Endpoint**: The server exposes a lightweight `GET /api/health` endpoint.
+2. **Automated Ping**: Use a service like **Uptime Robot** or **Cron-job.org**.
+   - **Type**: HTTP(s) Monitor.
+   - **URL**: `https://your-app.onrender.com/api/health`
+   - **Interval**: 5 minutes.
+3. **Benefit**: This keeps the server "alive" 24/7, eliminating "cold start" delays and ensuring the first user of the day receives an instant response.
 
-```
-OPENAI_API_KEY=sk-...
-ADMIN_INGEST_TOKEN=your-secret-token-here
-SESSIONS_DIR=/var/data
-SESSION_TTL_MS=2592000000
-SESSION_PRUNE_INTERVAL_MS=600000
-MAX_SESSION_MESSAGES=20
-INGEST_RATE_LIMIT_WINDOW_MS=900000
-INGEST_RATE_LIMIT_MAX=10
-```
+---
 
-### 4. Build & Start command
+## 🧪 Quality Assurance & Troubleshooting
 
-- Build: `npm install`
-- Start: `npm start`
-
-### 5. Seedare il catalogo (una volta)
-
-Una volta deployato, dalla tua macchina locale:
-
+### Running Tests
+Before every deployment, ensure the full test suite passes locally:
 ```bash
-ADMIN_INGEST_TOKEN=your-secret-token-here \
-  RENDER_URL=https://includo-guide.onrender.com/api/admin/ingest \
-  node server/scripts/seed_production.js
+cd server && npm test
+cd ../client && npm test
 ```
+
+### Common Issues
+- **CORS Errors**: Ensure `VITE_API_BASE` in Vercel matches your Render URL exactly.
+- **401 Unauthorized during Seed**: Check that the `x-admin-token` header sent by `seed_production.js` matches the `ADMIN_INGEST_TOKEN` on the server.
+- **Missing Embeddings**: If courses are visible but recommendations fail, re-run the Data Synchronization step.
 
 ---
 
-## Frontend (React + Vite) → Vercel
-
-### 1. Configurare Vercel
-
-- Vai su [vercel.com](https://vercel.com) e importa il repo.
-- Scegli folder: `./client`.
-
-### 2. Build & Output settings (auto-rilevati)
-
-- Framework: **Create React App** (o Vite, Vercel lo rileva).
-- Build: `npm run build`
-- Output directory: `dist`
-
-### 3. Environment Variables (opzionale)
-
-Se vuoi API custom:
-
-```
-VITE_API_BASE=https://includo-guide.onrender.com/api
-```
-
-Di default usa `http://localhost:3001/api`, ma Vercel aggiornerà dinamicamente al dominio Render.
-
-### 4. Deploy
-
-Vercel auto-deploya ogni push a main.
-
----
-
-## Verificare il Deploy
-
-### Backend health check
-
-```bash
-curl https://includo-guide.onrender.com/api/health
-```
-
-Dovrebbe rispondere: `{"status":"ok","uptime":...}`
-
-### Frontend
-
-Apri `https://includo-guide.vercel.app` e testa la chat.
-
----
-
-## ⚠️ Limitazioni Importanti
-
-### Single Instance Only
-
-- **Sessioni non sincronizzate**: se deployate 2+ instance backend, ogni istanza ha una copia locale di `sessions.json`.
-- **Soluzione**: Render offre replica DB; per produzione usare PostgreSQL o Redis per sessions.
-
-### Render Free Tier & Zero-Downtime Strategy
-
-- **Default Behavior**: Spins down dopo 15 min di inattività.
-- **Soluzione Ottimizzata**: Il progetto include un endpoint `/api/health` dedicato.
-- **Configurazione Uptime Monitoring**: Utilizzare un servizio come **Uptime Robot** o **Cron-job.org** per inviare una richiesta GET ogni 5-10 minuti. Questo mantiene il server "sveglio" h24, eliminando i cold start e garantendo risposte istantanee alla prima interazione dell'utente. ✅
-
-### Omissioni intenzionali per MVP
-
-- Nessun rate limiting globale su `/api/chat`.
-- Nessun circuit breaker su OpenAI API.
-- Sessioni cancellate al restart server (se `SESSIONS_DIR` non è persistent disk).
-
----
-
-## Troubleshooting Rapido
-
-| Sintomo                        | Causa                      | Soluzione                                   |
-| ------------------------------ | -------------------------- | ------------------------------------------- |
-| 401/403 su `/api/admin/ingest` | Token errato o mancante    | Verifica `ADMIN_INGEST_TOKEN` in Render env |
-| 503 al seed                    | Token non configurato      | Setta `ADMIN_INGEST_TOKEN` in env Render    |
-| Chat risponde lentamente       | Cold start o OpenAI lento  | Attendi 30+ sec, controlla quota OpenAI     |
-| Sessione si perde dopo restart | `/var/data` non persistent | Upgrade a persistent disk su Render         |
-| CORS error dal client          | API_BASE sbagliato         | Verifica `VITE_API_BASE` su Vercel          |
-
----
-
-## Architettura di Deployment
-
-```
-[Client, Vercel]
-         ↓ HTTPS
-    [API Gateway]
-         ↓
-[Server, Render]
-    ├─ OpenAI API
-    ├─ /data/vector_db.json (courses)
-    └─ /var/data/sessions.json (sessions, non persistent)
-```
-
----
-
-_Per produzione robusta: migrare sessions a Postgres/Redis e aggiungere load balancer._
+&copy; 2026 IncluDO Project - *Engineering inclusive futures.*

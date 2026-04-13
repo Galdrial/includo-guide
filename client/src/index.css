@@ -1,12 +1,15 @@
 /* 
- * DESIGN SYSTEM & TOKENS
- * Terracotta and Navy palette for an artisan feel.
+ * -----------------------------------------------------------------------------
+ * 1. DESIGN SYSTEM & TOKENS
+ * -----------------------------------------------------------------------------
+ * Defined CSS variables for global consistency.
+ * Using a palette of Terracotta and Navy to evoke an artisan, artisan-grade feel.
  */
 
 :root {
-  --primary: #E67E22; /* Warm Terracotta */
-  --secondary: #2C3E50; /* Deep Navy */
-  --accent: #27AE60; /* Forest Green */
+  --primary: #D35400; /* Deep Terracotta - WCAG AA Compliant Contrast (4.5:1+) */
+  --secondary: #2C3E50; /* Deep Navy - Contrast & Text Color */
+  --accent: #27AE60; /* Forest Green - Action & Success */
   --bg: #F8F9FA;
   --text: #2D3436;
   --glass: rgba(255, 255, 255, 0.85);
@@ -14,7 +17,9 @@
 }
 
 /* 
- * BASE STYLES & RESET
+ * -----------------------------------------------------------------------------
+ * 2. BASE STYLES & RESET
+ * -----------------------------------------------------------------------------
  */
 * {
   margin: 0;
@@ -27,7 +32,7 @@ body {
   background: var(--bg);
   background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
   color: var(--text);
-  min-height: 100dvh; /* Dynamic viewport height for mobile */
+  min-height: 100dvh; /* Dynamic viewport height for mobile compatibility */
   margin: 0;
 }
 
@@ -36,7 +41,9 @@ body {
 }
 
 /* 
- * LAYOUT
+ * -----------------------------------------------------------------------------
+ * 3. LAYOUT STRUCTURE
+ * -----------------------------------------------------------------------------
  */
 .app-container {
   max-width: 1200px;
@@ -48,7 +55,9 @@ body {
 }
 
 /* 
- * HEADER COMPONENTS
+ * -----------------------------------------------------------------------------
+ * 4. HEADER & BRANDING
+ * -----------------------------------------------------------------------------
  */
 header {
   margin-bottom: 2rem;
@@ -106,7 +115,9 @@ p.tagline {
 }
 
 /* 
- * CHAT WINDOW (GLASSMORPHISM)
+ * -----------------------------------------------------------------------------
+ * 5. CHAT WINDOW (Glassmorphism UI)
+ * -----------------------------------------------------------------------------
  */
 .chat-window {
   flex: 1;
@@ -130,7 +141,7 @@ p.tagline {
   scroll-behavior: smooth;
 }
 
-/* Custom Scrollbar */
+/* Custom Scrollbar for better UI integration */
 .messages-area::-webkit-scrollbar {
   width: 6px;
 }
@@ -140,7 +151,9 @@ p.tagline {
 }
 
 /* 
- * MESSAGING BUBBLES
+ * -----------------------------------------------------------------------------
+ * 6. MESSAGE COMPONENTS
+ * -----------------------------------------------------------------------------
  */
 .message {
   max-width: 85%;
@@ -153,7 +166,7 @@ p.tagline {
 }
 
 .message.bot {
-  max-width: 95%; /* Wider bubbles for Enterprise tables */
+  max-width: 95%; /* Wider layout to accommodate course tables */
   align-self: flex-start;
 }
 
@@ -167,17 +180,33 @@ p.tagline {
   min-width: 100px;
 }
 
-/* --- ENTERPRISE MARKDOWN STYLING --- */
+.user .bubble {
+  background: linear-gradient(135deg, var(--primary) 0%, #D35400 100%);
+  color: white;
+  border-bottom-right-radius: 4px;
+}
+
+.bot .bubble {
+  background: white;
+  color: var(--text);
+  border-bottom-left-radius: 4px;
+}
+
+/* 
+ * -----------------------------------------------------------------------------
+ * 7. ENTERPRISE MARKDOWN STYLING (Tables & Lists)
+ * -----------------------------------------------------------------------------
+ */
 .bubble table {
   width: 100%;
-  min-width: 100%; /* Force table to fill the bubble */
+  min-width: 100%;
   border-collapse: separate;
   border-spacing: 0;
   margin: 1.2rem 0;
   border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 12px;
   overflow-x: auto;
-  display: table; /* Reset to table to ensure width: 100% works best */
+  display: table;
 }
 
 .user .bubble table {
@@ -216,20 +245,10 @@ p.tagline {
 .bubble ul, .bubble ol { padding-left: 1.2rem; margin: 0.8rem 0; }
 .bubble li { margin-bottom: 0.4rem; }
 
-.user .bubble {
-  background: linear-gradient(135deg, var(--primary) 0%, #D35400 100%);
-  color: white;
-  border-bottom-right-radius: 4px;
-}
-
-.bot .bubble {
-  background: white;
-  color: var(--text);
-  border-bottom-left-radius: 4px;
-}
-
 /* 
- * INPUT SYSTEM
+ * -----------------------------------------------------------------------------
+ * 8. INPUT CONTROL SYSTEM
+ * -----------------------------------------------------------------------------
  */
 .input-area {
   padding: 1.5rem 2rem;
@@ -281,7 +300,9 @@ p.tagline {
 }
 
 /* 
- * MODERN MODAL OVERLAY
+ * -----------------------------------------------------------------------------
+ * 9. MODAL & INTERACTIVE OVERLAYS
+ * -----------------------------------------------------------------------------
  */
 .modal-overlay {
   position: fixed;
@@ -295,7 +316,7 @@ p.tagline {
   padding: 2rem;
 }
 
-.modal-card {
+.modal-content {
   background: white;
   padding: 2.5rem;
   border-radius: 32px;
@@ -305,13 +326,13 @@ p.tagline {
   box-shadow: 0 20px 50px rgba(0,0,0,0.2);
 }
 
-.modal-card h3 {
+.modal-content h2 {
   color: var(--secondary);
   font-size: 1.5rem;
   margin-bottom: 1rem;
 }
 
-.modal-card p {
+.modal-content p {
   color: #636e72;
   font-size: 0.95rem;
   line-height: 1.6;
@@ -324,7 +345,7 @@ p.tagline {
   justify-content: center;
 }
 
-.btn-cancel, .btn-confirm {
+.cancel-btn, .confirm-btn {
   padding: 0.8rem 1.8rem;
   border-radius: 50px;
   font-family: inherit;
@@ -333,13 +354,13 @@ p.tagline {
   transition: all 0.3s ease;
 }
 
-.btn-cancel {
+.cancel-btn {
   background: #f8f9fa;
   border: 1px solid #dee2e6;
   color: #495057;
 }
 
-.btn-confirm {
+.confirm-btn {
   background: var(--primary);
   border: none;
   color: white;
@@ -347,11 +368,13 @@ p.tagline {
 }
 
 /* 
- * RESPONSIVE DESIGN (ENTERPRISE GRADE)
+ * -----------------------------------------------------------------------------
+ * 10. RESPONSIVE OPTIMIZATIONS
+ * -----------------------------------------------------------------------------
  */
 @media (max-width: 768px) {
   .app-container {
-    padding: 0.75rem; /* Maximize screen space */
+    padding: 0.75rem; 
   }
 
   header {
@@ -359,15 +382,11 @@ p.tagline {
   }
 
   h1 {
-    font-size: 1.8rem; /* Scale down title */
+    font-size: 1.8rem; 
   }
 
   p.tagline {
     font-size: 0.85rem;
-  }
-
-  .title-group {
-    max-width: 70%;
   }
 
   .reset-chat-btn {
@@ -376,7 +395,7 @@ p.tagline {
   }
 
   .chat-window {
-    border-radius: 16px; /* Slightly sharper for mobile */
+    border-radius: 16px;
   }
 
   .messages-area {
@@ -385,13 +404,12 @@ p.tagline {
   }
 
   .message {
-    max-width: 98%; /* Use full width on small screens */
+    max-width: 98%;
   }
 
   .bubble {
     padding: 1rem;
     font-size: 0.95rem;
-    border-radius: 16px;
   }
 
   .input-area {
@@ -410,7 +428,9 @@ p.tagline {
 }
 
 /* 
- * ANIMATIONS
+ * -----------------------------------------------------------------------------
+ * 11. MICROMOTIONS & ANIMATIONS
+ * -----------------------------------------------------------------------------
  */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }

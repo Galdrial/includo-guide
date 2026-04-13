@@ -1,14 +1,28 @@
+/**
+ * FRONTEND INTEGRATION TESTS
+ * This suite verifies the core UI components and interaction flows
+ * of the IncluDO guide using React Testing Library and Vitest.
+ */
+
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import axios from 'axios';
 import { describe, expect, it, vi } from 'vitest';
 import App from './App';
 
+/**
+ * Helper to render the App and wait for the initial welcome message.
+ */
 const renderApp = async () => {
   render( <App /> );
   await screen.findByText( /Le nostre aree di eccellenza sono/i );
 };
 
-// Mock axios to prevent network errors during UI tests
+// --- MOCKS ---
+
+/**
+ * MOCK AXIOS: Prevents real network requests during UI tests.
+ * This ensures tests are fast and independent of the backend state.
+ */
 vi.mock( 'axios', () => {
   return {
     default: {
@@ -18,7 +32,10 @@ vi.mock( 'axios', () => {
   };
 } );
 
-// Mock localStorage
+/**
+ * MOCK LOCALSTORAGE: Simulates browser persistence in JSDOM.
+ * Necessary for testing Session ID stability across renders.
+ */
 Object.defineProperty( window, 'localStorage', {
   value: {
     getItem: vi.fn().mockReturnValue( null ),
@@ -29,16 +46,23 @@ Object.defineProperty( window, 'localStorage', {
   writable: true
 } );
 
-describe( 'IncluDO Frontend Integration', () => {
+describe( 'IncluDO Frontend Integration & UX', () => {
 
-  it( 'renders the brand title correctly', async () => {
+  /**
+   * Branding & Initial Render
+   */
+  it( 'renders the brand title and logo correctly', async () => {
     await renderApp();
     const titleElement = screen.getByRole( 'heading', { name: /IncluDO Guide/i } );
     expect( titleElement ).toBeInTheDocument();
     expect( screen.getByText( 'DO' ) ).toBeInTheDocument();
   } );
 
-  it( 'displays the welcome message with categories', async () => {
+  /**
+   * Content & Pedagogy
+   * Verifies that the initial welcome message contains the correct vocational categories.
+   */
+  it( 'displays the welcome message with artisan categories', async () => {
     await renderApp();
     const welcome = screen.getByText( /Le nostre aree di eccellenza sono/i );
     expect( welcome ).toBeInTheDocument();
@@ -47,35 +71,43 @@ describe( 'IncluDO Frontend Integration', () => {
     expect( categories ).toBeInTheDocument();
   } );
 
-  it( 'has correct ARIA roles for accessibility', async () => {
+  /**
+   * Accessibility (A11y)
+   * Ensures the application follows semantic HTML patterns and ARIA roles.
+   */
+  it( 'has correct ARIA roles for screen reader accessibility', async () => {
     await renderApp();
     expect( screen.getByRole( 'banner' ) ).toBeInTheDocument();
     expect( screen.getByRole( 'log' ) ).toBeInTheDocument();
   } );
 
-  it( 'input field is present and accessible', async () => {
-    await renderApp();
-    const input = screen.getByRole( 'textbox' );
-    expect( input ).toBeInTheDocument();
-  } );
-
-  it( 'sends a message and renders assistant reply', async () => {
+  /**
+   * Interaction Logic (Chat Flow)
+   * Verifies the full cycle of sending a message and receiving an AI reply in the UI.
+   */
+  it( 'sends a message and renders the assistant reply from the API', async () => {
     await renderApp();
 
+    // Mock specific success response for this test case
     axios.post.mockResolvedValueOnce( { data: { reply: 'Risposta orientamento test' } } );
 
     const input = screen.getByRole( 'textbox' );
     fireEvent.change( input, { target: { value: 'Vorrei un corso da remoto' } } );
     fireEvent.click( screen.getByRole( 'button', { name: /Invia messaggio/i } ) );
 
+    // Wait for the async state update and DOM rendering
     await waitFor( () => {
       expect( screen.getByText( 'Risposta orientamento test' ) ).toBeInTheDocument();
     } );
   } );
 
-  it( 'shows fallback error message when chat request fails', async () => {
+  /**
+   * Error Handling (Resilience)
+   */
+  it( 'shows a fallback error bubble when the chat request fails', async () => {
     await renderApp();
 
+    // Mock network failure
     axios.post.mockRejectedValueOnce( new Error( 'network down' ) );
 
     const input = screen.getByRole( 'textbox' );
