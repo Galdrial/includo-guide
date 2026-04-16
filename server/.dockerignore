@@ -7,4 +7,3 @@ npm-debug.log
 coverage
 dist
 .DS_Store
-3001ADMIN_INGEST_TOKEN=test-token
