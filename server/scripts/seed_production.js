@@ -24,7 +24,6 @@ const ADMIN_INGEST_TOKEN = process.env.ADMIN_INGEST_TOKEN || process.env.INGEST_
  */
 const PRODUCTION_INGEST_URL =
   process.env.PRODUCTION_INGEST_URL ||
-  process.env.RENDER_URL ||
   'https://api.your-domain.example/api/admin/ingest';
 
 // Load source catalog from local database
